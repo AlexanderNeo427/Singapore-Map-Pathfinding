@@ -1,5 +1,5 @@
 import SceneBase from './scenes/SceneBase';
-import { Camera, WebGLRenderer } from 'three';
+import { WebGLRenderer } from 'three';
 
 export enum SceneID {
     Pathfinding
@@ -56,6 +56,6 @@ export default class SceneManager {
     }
 
     cleanup(): void {
-        this._allScenes.forEach((scene, _DISCARD) => scene.onDestroy())
+        this._allScenes.forEach((scene, _) => scene.onDestroy())
     }
 }

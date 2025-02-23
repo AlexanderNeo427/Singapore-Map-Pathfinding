@@ -1,10 +1,12 @@
 import * as THREE from 'three'
 import { Feature, FeatureCollection, LineString, Position } from 'geojson';
-import sgGeoData from '../assets/sg_geodata.json'
+import sgGeoData from '../../assets/sg_geodata.json'
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import SceneBase from './SceneBase';
 import { SceneID } from '../SceneManager';
 import { BoundingBox } from '../DataClasses';
+
+const SCALE_FACTOR = 1000
 
 export default class ScenePathfinding extends SceneBase {
     _camera: THREE.OrthographicCamera
@@ -12,71 +14,68 @@ export default class ScenePathfinding extends SceneBase {
 
     constructor(renderer: THREE.WebGLRenderer) {
         super()
-        this._camera = new THREE.OrthographicCamera(0, 100, 90, 0, 0.1, 100);
-        this._camera.position.set(0, 0, 0)
-        // window.addEventListener('resize', () => {
-        //     this._camera = new THREE.OrthographicCamera(0, 1000, 800, 0, 0.1, 100);
-        // })
+        this._camera = new THREE.OrthographicCamera();
+        this._camera.position.set(0, 0, 1)
 
+        window.addEventListener('resize', () => { // For debugging purposes
+            console.log("Pos: ", this._camera.position)
+            console.log(
+                "Bounds: ", this._camera.left,
+                this._camera.bottom, this._camera.right, this._camera.top,
+            )
+            console.log()
+        })
         this._camControls = this._setupCamControls(this._camera, renderer)
     }
 
     onCreate(): void {
         // Get bounding box from geoData
-        // const geoData = sgGeoData as FeatureCollection
-        // const geoDataBBox: BoundingBox = this._getBoundingBox(geoData)
+        const geoData = sgGeoData as FeatureCollection
+        const geoDataBBox: BoundingBox = this._getBoundingBox(geoData)
 
         // Use prev bounding box to set camera view
-        // this._camera.left = geoDataBBox.min.x
-        // this._camera.right = geoDataBBox.max.x
-        // this._camera.top = geoDataBBox.max.y
-        // this._camera.bottom = geoDataBBox.min.y
+        this._windowResizeHandler(geoDataBBox)
+        window.addEventListener('resize', () => this._windowResizeHandler(geoDataBBox))
 
         // Derive camera position from prev bounding box
         // const newCamPos: THREE.Vector2 = this._getBBoxCenter(geoDataBBox)
         // this._camera.position.setX(newCamPos.x)
         // this._camera.position.setY(newCamPos.y)
-        // this._camera.position.setZ(0)
+
+        // Adding lights to the scene
+        this.add(new THREE.AmbientLight(0xFFFFFF, 1))
 
         // Create road lines
-        // geoData.features.forEach((feature: Feature) => {
-        //     if (feature.geometry.type !== 'LineString') {
-        //         return
-        //     }
-        //     const coordinates: Position[] = feature.geometry.coordinates
-        //     const points: THREE.Vector2[] = coordinates.map((coord: Position) => {
-        //         const px = coord[0] 
-        //         const py = coord[1] 
-        //         return new THREE.Vector2(px, py)
-        //     })
+        geoData.features.forEach((feature: Feature) => {
+            if (feature.geometry.type !== 'LineString') {
+                return
+            }
+            const coordinates: Position[] = feature.geometry.coordinates
+            const points: THREE.Vector2[] = coordinates.map((coord: Position) => {
+                const px = coord[0]
+                const py = coord[1]
+                return new THREE.Vector2(px, py)
+            })
 
-        //     const lineGeometry = new THREE.BufferGeometry().setFromPoints(points)
-        //     const lineMaterial = new THREE.LineBasicMaterial({ color: 0xFF0000 })
-        //     const line = new THREE.Line(lineGeometry, lineMaterial)
-        //     this.add(line)
-        // })
+            const lineGeometry = new THREE.BufferGeometry().setFromPoints(points)
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xFF0000 })
+            const line = new THREE.Line(lineGeometry, lineMaterial)
+            this.add(line)
+        })
 
-        // Create some DEBUG mesh
-        const meshCube = new THREE.Mesh(
-            new THREE.BoxGeometry(10, 5, 10),
-            new THREE.MeshBasicMaterial({ color: 0x00FF00 })
+        //==== Create some DEBUG mesh ====
+        const cube = new THREE.Mesh(
+            new THREE.BoxGeometry(0.08, 0.08),
+            new THREE.MeshPhongMaterial({ color: 0xffacff })
         )
-        meshCube.position.set(0, 0, 10)
-        this.add(meshCube)
-
-        this.add(new THREE.AmbientLight(0xFFFFFF, 1))
+        cube.position.set(this._camera.position.x, this._camera.position.y, 0)
+        this.add(cube)
     }
 
     onEnter(): void { }
 
     onTick(dt: number): void {
         this._camControls.update()
-        // console.log("Pos: ", this._camera.position)
-        // console.log("View: ", this._camera.left, this._camera.right)
-        // console.log(
-        //     this._camera.left, this._camera.bottom,
-        //     this._camera.right, this._camera.top,
-        // )
     }
 
     onExit(): void { }
@@ -132,5 +131,12 @@ export default class ScenePathfinding extends SceneBase {
             bbox.min.x + (dx * 0.5),
             bbox.min.y + (dy * 0.5)
         )
+    }
+
+    _windowResizeHandler(geoDataBBox: BoundingBox): void {
+        this._camera.left = geoDataBBox.min.x * SCALE_FACTOR
+        this._camera.right = geoDataBBox.max.x * SCALE_FACTOR
+        this._camera.top = geoDataBBox.max.y * SCALE_FACTOR
+        this._camera.bottom = geoDataBBox.min.y * SCALE_FACTOR
     }
 }
