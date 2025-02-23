@@ -1,35 +1,54 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from 'react'
+import { WebGLRenderer } from 'three'
+import SceneManager from './interactive/SceneManager'
+import ScenePathfinding from './interactive/scenes/ScenePathfinding'
 
-function App() {
-  const [count, setCount] = useState(0)
+const App: React.FC = () => {
+   const canvasRef = React.useRef<HTMLCanvasElement>(null)
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+   React.useEffect(() => {
+      if (!canvasRef.current) {
+         return
+      }
+      const renderer = new WebGLRenderer({ canvas: canvasRef.current, antialias: true })
+      renderer.setSize(window.innerWidth, window.innerHeight)
+      renderer.setPixelRatio(window.devicePixelRatio)
+      window.addEventListener('resize', () => {
+         renderer.setSize(window.innerWidth, window.innerHeight)
+      })
+
+      const sceneManager = new SceneManager(renderer)
+      sceneManager.registerScene(new ScenePathfinding(renderer))
+
+      let animHandle: number = 0
+      let prevTimeElapsed: number = 0
+      const loop = (timeElapsed: number) => {
+         const deltaTime = timeElapsed - prevTimeElapsed
+         sceneManager.onUpdateAndRender(deltaTime)
+
+         prevTimeElapsed = timeElapsed
+         animHandle = requestAnimationFrame(loop)
+      }
+      loop(0)
+
+      return () => {
+         cancelAnimationFrame(animHandle)
+         sceneManager.cleanup()
+      }
+   }, [])
+
+   return (
+      <div style={{
+         display: 'flex',
+         justifyContent: 'center',
+         alignItems: 'center',
+
+         width: '90%',
+         height: '80%', 
+      }}>
+         <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+   )
 }
 
 export default App
