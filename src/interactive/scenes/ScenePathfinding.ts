@@ -15,7 +15,10 @@ export default class ScenePathfinding extends SceneBase {
     constructor(renderer: THREE.WebGLRenderer) {
         super()
         this._camera = new THREE.OrthographicCamera();
-        this._camera.position.set(0, 0, 1)
+        this._camera.near = 1
+        this._camera.far = 1000
+        this._camera.position.set(0, 0, 100)
+        this._camera.updateProjectionMatrix()
 
         window.addEventListener('resize', () => { // For debugging purposes
             console.log("Pos: ", this._camera.position)
@@ -33,14 +36,19 @@ export default class ScenePathfinding extends SceneBase {
         const geoData = sgGeoData as FeatureCollection
         const geoDataBBox: BoundingBox = this._getBoundingBox(geoData)
 
-        // Use prev bounding box to set camera view
-        this._windowResizeHandler(geoDataBBox)
-        window.addEventListener('resize', () => this._windowResizeHandler(geoDataBBox))
+        // Use prev bounding box to set camera view 
+        this._camera.left = geoDataBBox.min.x
+        this._camera.right = geoDataBBox.max.x
+        this._camera.top = geoDataBBox.max.y
+        this._camera.bottom = geoDataBBox.min.y
 
         // Derive camera position from prev bounding box
-        // const newCamPos: THREE.Vector2 = this._getBBoxCenter(geoDataBBox)
-        // this._camera.position.setX(newCamPos.x)
-        // this._camera.position.setY(newCamPos.y)
+        this._camera.updateProjectionMatrix()
+        console.log("Init Cam Pos: ", this._camera.position)
+        console.log(
+            "Init Cam View: ", this._camera.left, this._camera.bottom,
+            this._camera.right, this._camera.top
+        )
 
         // Adding lights to the scene
         this.add(new THREE.AmbientLight(0xFFFFFF, 1))
@@ -64,12 +72,19 @@ export default class ScenePathfinding extends SceneBase {
         })
 
         //==== Create some DEBUG mesh ====
-        const cube = new THREE.Mesh(
-            new THREE.BoxGeometry(0.08, 0.08),
-            new THREE.MeshPhongMaterial({ color: 0xffacff })
-        )
-        cube.position.set(this._camera.position.x, this._camera.position.y, 0)
-        this.add(cube)
+        // const dx: number = geoDataBBox.computeLength()
+        // const dy: number = geoDataBBox.computeHeight()
+        // const cube = new THREE.Mesh(
+        //     new THREE.BoxGeometry(0.01, 0.01),
+        //     new THREE.MeshPhongMaterial({ color: 0xffacff })
+        // )
+        // cube.position.set(
+        //     geoDataBBox.min.x + (dx * 0.5),
+        //     geoDataBBox.min.y + (dy * 0.5), 
+        //     0
+        // )
+        // this.add(cube)
+        console.log("----------")
     }
 
     onEnter(): void { }
