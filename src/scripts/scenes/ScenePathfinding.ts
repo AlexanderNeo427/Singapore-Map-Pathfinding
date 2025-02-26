@@ -30,27 +30,26 @@ export default class ScenePathfinding extends SceneBase {
         const geoDataBBox: BoundingBox = this._getBoundingBox(geoData)
 
         // Use prev bounding box to set camera view 
-        const swProjected = proj4(
+        const botLeft: [number, number] = proj4(
             'EPSG:4326', 'EPSG:3857', [geoDataBBox.min.x, geoDataBBox.min.y]
         )
-        const neProjected = proj4(
+        const topRight: [number, number] = proj4(
             'EPSG:4326', 'EPSG:3857', [geoDataBBox.max.x, geoDataBBox.max.y]
         )
-        this._camera.left = swProjected[0];
-        this._camera.right = neProjected[0];
-        this._camera.top = neProjected[1];
-        this._camera.bottom = swProjected[1];
+        this._camera.left = botLeft[0]
+        this._camera.right = topRight[0]
 
-        // Derive camera position from prev bounding box
-        this._camera.updateProjectionMatrix()
-        // console.log("Init Cam Pos: ", this._camera.position)
-        // console.log(
-        //     "Init Cam View: ", this._camera.left, this._camera.bottom,
-        //     this._camera.right, this._camera.top
-        // )
-
-        // Adding lights to the scene
-        this.add(new THREE.AmbientLight(0xFFFFFF, 1))
+        const adjustCameraForAspectRatio = () => {
+            const aspectRatio = window.innerWidth / window.innerHeight;
+            const camViewWidth: number = Math.abs(topRight[0] - botLeft[0])
+            const targetViewHeight: number = (camViewWidth / aspectRatio)
+            const yCenter: number = Math.abs(topRight[1] - botLeft[1]) * 0.5 + botLeft[1]
+            this._camera.top = yCenter + (targetViewHeight * 0.5)
+            this._camera.bottom = yCenter - (targetViewHeight * 0.5)
+            this._camera.updateProjectionMatrix()
+        }
+        adjustCameraForAspectRatio()
+        window.addEventListener('resize', adjustCameraForAspectRatio)
 
         // Create road lines
         geoData.features.forEach((feature: Feature) => {
@@ -64,24 +63,10 @@ export default class ScenePathfinding extends SceneBase {
             })
 
             const lineGeometry = new THREE.BufferGeometry().setFromPoints(points)
-            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xFF0000 })
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xFFFFFF })
             const line = new THREE.Line(lineGeometry, lineMaterial)
             this.add(line)
         })
-
-        //==== Create some DEBUG mesh ====
-        // const dx: number = geoDataBBox.computeLength()
-        // const dy: number = geoDataBBox.computeHeight()
-        // const cube = new THREE.Mesh(
-        //     new THREE.BoxGeometry(0.01, 0.01),
-        //     new THREE.MeshPhongMaterial({ color: 0xffacff })
-        // )
-        // cube.position.set(
-        //     geoDataBBox.min.x + (dx * 0.5),
-        //     geoDataBBox.min.y + (dy * 0.5), 
-        //     0
-        // )
-        // this.add(cube)
     }
 
     onEnter(): void { }
