@@ -1,7 +1,7 @@
 import React from 'react'
 import { WebGLRenderer } from 'three'
-import SceneManager from './interactive/SceneManager'
-import ScenePathfinding from './interactive/scenes/ScenePathfinding'
+import SceneManager from './scripts/SceneManager'
+import ScenePathfinding from './scripts/scenes/ScenePathfinding'
 
 const App: React.FC = () => {
    const canvasRef = React.useRef<HTMLCanvasElement>(null)
@@ -18,6 +18,8 @@ const App: React.FC = () => {
       })
 
       const sceneManager = new SceneManager(renderer)
+
+      sceneManager.onStartup()
       sceneManager.registerScene(new ScenePathfinding(renderer))
 
       let animHandle: number = 0

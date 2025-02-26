@@ -1,8 +1,16 @@
 import { Vector2 } from "three"
 
+export enum MapProjections {
+    Mercator
+}
+
+export enum SceneID {
+    Pathfinding
+}
+
 export class BoundingBox {
-    public min: Vector2 = new Vector2()
-    public max: Vector2 = new Vector2()
+    public min = new Vector2()
+    public max = new Vector2()
 
     constructor(min: Vector2, max: Vector2) {
         this.min = min

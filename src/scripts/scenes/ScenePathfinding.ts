@@ -3,10 +3,8 @@ import { Feature, FeatureCollection, LineString, Position } from 'geojson';
 import sgGeoData from '../../assets/sg_geodata.json'
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import SceneBase from './SceneBase';
-import { SceneID } from '../SceneManager';
-import { BoundingBox } from '../DataClasses';
-
-const SCALE_FACTOR = 1000
+import { BoundingBox, SceneID } from '../Declarations';
+import proj4 from 'proj4';
 
 export default class ScenePathfinding extends SceneBase {
     _camera: THREE.OrthographicCamera
@@ -16,17 +14,12 @@ export default class ScenePathfinding extends SceneBase {
         super()
         this._camera = new THREE.OrthographicCamera();
         this._camera.near = 1
-        this._camera.far = 1000
+        this._camera.far = 800
         this._camera.position.set(0, 0, 100)
         this._camera.updateProjectionMatrix()
 
-        window.addEventListener('resize', () => { // For debugging purposes
-            console.log("Pos: ", this._camera.position)
-            console.log(
-                "Bounds: ", this._camera.left,
-                this._camera.bottom, this._camera.right, this._camera.top,
-            )
-            console.log()
+        window.addEventListener('resize', () => {
+            // Resizing the camera based on the canvas? 
         })
         this._camControls = this._setupCamControls(this._camera, renderer)
     }
@@ -37,18 +30,24 @@ export default class ScenePathfinding extends SceneBase {
         const geoDataBBox: BoundingBox = this._getBoundingBox(geoData)
 
         // Use prev bounding box to set camera view 
-        this._camera.left = geoDataBBox.min.x
-        this._camera.right = geoDataBBox.max.x
-        this._camera.top = geoDataBBox.max.y
-        this._camera.bottom = geoDataBBox.min.y
+        const swProjected = proj4(
+            'EPSG:4326', 'EPSG:3857', [geoDataBBox.min.x, geoDataBBox.min.y]
+        )
+        const neProjected = proj4(
+            'EPSG:4326', 'EPSG:3857', [geoDataBBox.max.x, geoDataBBox.max.y]
+        )
+        this._camera.left = swProjected[0];
+        this._camera.right = neProjected[0];
+        this._camera.top = neProjected[1];
+        this._camera.bottom = swProjected[1];
 
         // Derive camera position from prev bounding box
         this._camera.updateProjectionMatrix()
-        console.log("Init Cam Pos: ", this._camera.position)
-        console.log(
-            "Init Cam View: ", this._camera.left, this._camera.bottom,
-            this._camera.right, this._camera.top
-        )
+        // console.log("Init Cam Pos: ", this._camera.position)
+        // console.log(
+        //     "Init Cam View: ", this._camera.left, this._camera.bottom,
+        //     this._camera.right, this._camera.top
+        // )
 
         // Adding lights to the scene
         this.add(new THREE.AmbientLight(0xFFFFFF, 1))
@@ -60,9 +59,8 @@ export default class ScenePathfinding extends SceneBase {
             }
             const coordinates: Position[] = feature.geometry.coordinates
             const points: THREE.Vector2[] = coordinates.map((coord: Position) => {
-                const px = coord[0]
-                const py = coord[1]
-                return new THREE.Vector2(px, py)
+                const projectedCoord = proj4('EPSG:4326', 'EPSG:3857', coord);
+                return new THREE.Vector2(projectedCoord[0], projectedCoord[1]);
             })
 
             const lineGeometry = new THREE.BufferGeometry().setFromPoints(points)
@@ -84,7 +82,6 @@ export default class ScenePathfinding extends SceneBase {
         //     0
         // )
         // this.add(cube)
-        console.log("----------")
     }
 
     onEnter(): void { }
@@ -146,12 +143,5 @@ export default class ScenePathfinding extends SceneBase {
             bbox.min.x + (dx * 0.5),
             bbox.min.y + (dy * 0.5)
         )
-    }
-
-    _windowResizeHandler(geoDataBBox: BoundingBox): void {
-        this._camera.left = geoDataBBox.min.x * SCALE_FACTOR
-        this._camera.right = geoDataBBox.max.x * SCALE_FACTOR
-        this._camera.top = geoDataBBox.max.y * SCALE_FACTOR
-        this._camera.bottom = geoDataBBox.min.y * SCALE_FACTOR
     }
 }
