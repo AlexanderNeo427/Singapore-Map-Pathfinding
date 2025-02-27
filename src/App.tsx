@@ -1,9 +1,8 @@
 import React from 'react'
 import DeckGL from '@deck.gl/react'
 import { PickingInfo, MapViewState, Position as DeckPosition } from 'deck.gl'
-import { Position as GeoPosition } from 'geojson'
 import { LineLayer } from 'deck.gl'
-import { Feature, FeatureCollection, LineString } from 'geojson';
+import { Feature, FeatureCollection, LineString, Position as GeoPosition } from 'geojson';
 import sg_geodata from './assets/sg_geodata.json'
 
 const App: React.FC = () => {
@@ -33,9 +32,9 @@ const App: React.FC = () => {
    //    return [0, 0]
    // }
 
-   const getCoords = (featureColl: FeatureCollection): FromToPair[] => {
+   const getCoords = (allFeatures: FeatureCollection): FromToPair[] => {
       const allFromToPairs: FromToPair[] = []
-      featureColl.features.forEach((feature: Feature) => {
+      allFeatures.features.forEach((feature: Feature) => {
          if (feature.geometry.type != 'LineString') {
             return
          }
@@ -53,12 +52,7 @@ const App: React.FC = () => {
 
    const layer = new LineLayer<FromToPair>({
       id: 'LineLayer',
-      data: (() => {
-         const coords = getCoords(sg_geodata as FeatureCollection)
-         console.log("Coords: ", coords)
-         return coords
-      })(),
-      // getColor: (d: BartSegment) => [Math.sqrt(d.inbound + d.outbound), 140, 0],
+      data: getCoords(sg_geodata as FeatureCollection),
       getSourcePosition: d => d.from,
       getTargetPosition: d => d.to,
       getWidth: 12,
@@ -73,11 +67,9 @@ const App: React.FC = () => {
 
          width: '100%', height: '80%',
       }}>
-         {/* <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} /> */}
          <DeckGL
             initialViewState={mapViewState}
             controller
-            // getTooltip={({ object }: PickingInfo<BartSegment>) => object && `${object.from.name} to ${object.to.name}`}
             layers={[layer]}
             onClick={(info: PickingInfo) => console.log("Clicked: ", info.coordinate)}
          />
