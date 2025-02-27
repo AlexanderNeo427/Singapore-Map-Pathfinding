@@ -1,43 +1,69 @@
 import React from 'react'
-import { WebGLRenderer } from 'three'
-import SceneManager from './scripts/SceneManager'
-import ScenePathfinding from './scripts/scenes/ScenePathfinding'
+import DeckGL from '@deck.gl/react'
+import { PickingInfo, MapViewState, Position as DeckPosition } from 'deck.gl'
+import { Position as GeoPosition } from 'geojson'
+import { LineLayer } from 'deck.gl'
+import { Feature, FeatureCollection, LineString } from 'geojson';
+import sg_geodata from './assets/sg_geodata.json'
 
 const App: React.FC = () => {
-   const canvasRef = React.useRef<HTMLCanvasElement>(null)
+   const mapViewState = {
+      longitude: 103.8599,
+      latitude: 1.348,
+      zoom: 15,
+   } as MapViewState
 
-   React.useEffect(() => {
-      if (!canvasRef.current) {
-         return
-      }
-      const renderer = new WebGLRenderer({ canvas: canvasRef.current, antialias: true })
-      renderer.setSize(window.innerWidth, window.innerHeight)
-      renderer.setPixelRatio(window.devicePixelRatio)
-      window.addEventListener('resize', () => {
-         renderer.setSize(window.innerWidth, window.innerHeight)
+   type FromToPair = {
+      from: DeckPosition
+      to: DeckPosition
+   };
+
+   // const getCenter = (allFromToPairs: FromToPair[]): [number, number] => {
+   //    let minX: number = Infinity
+   //    let minY: number = Infinity 
+   //    let maxX: number = -Infinity
+   //    let maxY: number = -Infinity
+
+   //    allFromToPairs.forEach(pair => {
+   //       minX = Math.min(pair.from[0])
+   //       minY = Math.min(pair.from[0])
+
+   //    })
+
+   //    return [0, 0]
+   // }
+
+   const getCoords = (featureColl: FeatureCollection): FromToPair[] => {
+      const allFromToPairs: FromToPair[] = []
+      featureColl.features.forEach((feature: Feature) => {
+         if (feature.geometry.type != 'LineString') {
+            return
+         }
+         const coords: GeoPosition[] = (feature.geometry as LineString).coordinates
+         for (let i = 0; i < (coords.length - 1); i++) {
+            const obj = {
+               from: [coords[i][0], coords[i][1]],
+               to: [coords[i + 1][0], coords[i + 1][1]],
+            } as FromToPair
+            allFromToPairs.push(obj)
+         }
       })
+      return allFromToPairs
+   }
 
-      const sceneManager = new SceneManager(renderer)
-
-      sceneManager.onStartup()
-      sceneManager.registerScene(new ScenePathfinding(renderer))
-
-      let animHandle: number = 0
-      let prevTimeElapsed: number = 0
-      const loop = (timeElapsed: number) => {
-         const deltaTime = timeElapsed - prevTimeElapsed
-         sceneManager.onUpdateAndRender(deltaTime)
-
-         prevTimeElapsed = timeElapsed
-         animHandle = requestAnimationFrame(loop)
-      }
-      loop(0)
-
-      return () => {
-         cancelAnimationFrame(animHandle)
-         sceneManager.cleanup()
-      }
-   }, [])
+   const layer = new LineLayer<FromToPair>({
+      id: 'LineLayer',
+      data: (() => {
+         const coords = getCoords(sg_geodata as FeatureCollection)
+         console.log("Coords: ", coords)
+         return coords
+      })(),
+      // getColor: (d: BartSegment) => [Math.sqrt(d.inbound + d.outbound), 140, 0],
+      getSourcePosition: d => d.from,
+      getTargetPosition: d => d.to,
+      getWidth: 12,
+      pickable: true
+   });
 
    return (
       <div style={{
@@ -45,12 +71,54 @@ const App: React.FC = () => {
          justifyContent: 'center',
          alignItems: 'center',
 
-         width: '90%',
-         height: '80%', 
+         width: '100%', height: '80%',
       }}>
-         <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
+         {/* <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} /> */}
+         <DeckGL
+            initialViewState={mapViewState}
+            controller
+            // getTooltip={({ object }: PickingInfo<BartSegment>) => object && `${object.from.name} to ${object.to.name}`}
+            layers={[layer]}
+            onClick={(info: PickingInfo) => console.log("Clicked: ", info.coordinate)}
+         />
       </div>
    )
 }
 
 export default App
+
+// const canvasRef = React.useRef<HTMLCanvasElement>(null)
+// React.useEffect(() => {
+//    if (!canvasRef.current) {
+//       return
+//    }
+//    const renderer = new WebGLRenderer({ canvas: canvasRef.current, antialias: true })
+//    renderer.setSize(window.innerWidth, window.innerHeight)
+//    renderer.setPixelRatio(window.devicePixelRatio)
+//    window.addEventListener('resize', () => {
+//       renderer.setSize(window.innerWidth, window.innerHeight)
+//    })
+//
+//    const sceneManager = new SceneManager(renderer)
+//
+//    sceneManager.onStartup()
+//    sceneManager.registerScene(new ScenePathfinding(renderer))
+//
+//    let animHandle: number = 0
+//    let prevTimeElapsed: number = 0
+//    const loop = (timeElapsed: number) => {
+//       const deltaTime = timeElapsed - prevTimeElapsed
+//       sceneManager.onUpdateAndRender(deltaTime)
+//
+//       prevTimeElapsed = timeElapsed
+//       animHandle = requestAnimationFrame(loop)
+//    }
+//    loop(0)
+//
+//    return () => {
+//       cancelAnimationFrame(animHandle)
+//       sceneManager.cleanup()
+//    }
+// }, [])
+// const initialViewState
+
