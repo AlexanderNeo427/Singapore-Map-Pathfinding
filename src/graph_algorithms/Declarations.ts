@@ -54,13 +54,11 @@ export class FrameData {
 export class GraphData {
     public allGraphNodes: Map<number, GraphNode> = new Map()
     public adjacencyList: Map<number, Set<number>> = new Map()
-    public fromToPairs: FromToPair[] = []
 }
 
 export const createGraphData = (alLFeatures: FeatureCollection): GraphData => {
     const allGraphNodes = new Map<number, GraphNode>()
     const adjacencyList = new Map<number, Set<number>>()
-    const fromToPairs: FromToPair[] = []
 
     alLFeatures.features.forEach((feature: Feature) => {
         if (feature.geometry.type !== 'LineString') { return }
@@ -93,14 +91,9 @@ export const createGraphData = (alLFeatures: FeatureCollection): GraphData => {
             // Bi-directional ways
             adjacencyList.get(currNodeID)?.add(otherNodeID)
             adjacencyList.get(otherNodeID)?.add(currNodeID)
-
-            fromToPairs.push({
-                from: allGraphNodes.get(currNodeID)?.position as DeckPosition,
-                to: allGraphNodes.get(otherNodeID)?.position as DeckPosition
-            })            
         }
     })
-    return { allGraphNodes: allGraphNodes, adjacencyList: adjacencyList, fromToPairs: fromToPairs }
+    return { allGraphNodes: allGraphNodes, adjacencyList: adjacencyList }
 }
 
 export const breadthFirstSearch = (graphData: GraphData): FrameData[] => {
@@ -111,7 +104,6 @@ export const breadthFirstSearch = (graphData: GraphData): FrameData[] => {
     const queueOfIDs = new Array<number>()
     const [[firstNodeID, _]] = graphData.adjacencyList.entries()
     queueOfIDs.push(firstNodeID)
-    let prevIdToProcess: number = firstNodeID
 
     const allFrameData: FrameData[] = []
     while (queueOfIDs.length > 0) {
@@ -122,13 +114,9 @@ export const breadthFirstSearch = (graphData: GraphData): FrameData[] => {
         neighbourIDs.forEach((idOfNeighbour: number) => {
             if (!visitedIDs.has(idOfNeighbour)) {
                 queueOfIDs.push(idOfNeighbour)
+                allFrameData.push({ fromID: idToProcess, toID: idOfNeighbour })
             }
         })
-
-        if (idToProcess !== prevIdToProcess) {
-            allFrameData.push(new FrameData(prevIdToProcess, idToProcess))
-        }
-        prevIdToProcess = idToProcess
     }
     return allFrameData
 }
@@ -159,7 +147,3 @@ const DFS = (id: number, graphData: GraphData, visitedIDs: Set<number>): FrameDa
     })
     return allFrameData
 }
-
-// export const createLineMap = (): FromToPair[] => {
-    
-// }
