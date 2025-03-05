@@ -1,5 +1,20 @@
-import { Deck, Position as DeckPosition } from "deck.gl"
+import { Position as DeckPosition } from "deck.gl"
 import { Feature, FeatureCollection, Position as GeoPosition, LineString } from "geojson";
+
+// const DeckGLOverlay: React.FC<DeckProps> = props => {
+//    const map = useMap()
+//    const overlay = useMemo(() => new GoogleMapsOverlay(props))
+//
+//    useEffect(() => {
+//       overlay.setMap(map)
+//       return () => overlay.setMap(null)
+//    }, [map])
+//
+//    overlay.setProps(props)
+//    return null
+// }
+
+export type FromToPair = { from: DeckPosition, to: DeckPosition }
 
 export const Utils = {
     hashCode(s: string): number {
@@ -9,11 +24,11 @@ export const Utils = {
         }
         return h;
     },
-    getCoordHash(geoCoord: GeoPosition): number {
+    getGeoPosHash(geoCoord: GeoPosition): number {
         return this.hashCode(`${geoCoord[0]}, ${geoCoord[1]}`)
     },
-    toDeckPosition(geoPos: GeoPosition): DeckPosition { return [geoPos[0], geoPos[1]] },
-    toGeoPosition(deckPos: DeckPosition): DeckPosition { return [deckPos[0], deckPos[1]] },
+    geoToDeckPos(geoPos: GeoPosition): DeckPosition { return [geoPos[0], geoPos[1]] },
+    deckToGeoPos(deckPos: DeckPosition): DeckPosition { return [deckPos[0], deckPos[1]] },
 }
 
 export class GraphNode {
@@ -26,7 +41,7 @@ export class GraphNode {
     }
 }
 
-export class BfsFrameData {
+export class FrameData {
     public readonly fromID: number
     public readonly toID: number
 
@@ -39,11 +54,13 @@ export class BfsFrameData {
 export class GraphData {
     public allGraphNodes: Map<number, GraphNode> = new Map()
     public adjacencyList: Map<number, Set<number>> = new Map()
+    public fromToPairs: FromToPair[] = []
 }
 
 export const createGraphData = (alLFeatures: FeatureCollection): GraphData => {
     const allGraphNodes = new Map<number, GraphNode>()
     const adjacencyList = new Map<number, Set<number>>()
+    const fromToPairs: FromToPair[] = []
 
     alLFeatures.features.forEach((feature: Feature) => {
         if (feature.geometry.type !== 'LineString') { return }
@@ -53,9 +70,9 @@ export const createGraphData = (alLFeatures: FeatureCollection): GraphData => {
 
             // Lazily instantiate new graph node for 'currNodeID'
             // (assuming it doesn't exist yet)
-            const currNodeID: number = Utils.getCoordHash(allWayCoords[i])
+            const currNodeID: number = Utils.getGeoPosHash(allWayCoords[i])
             if (!allGraphNodes.has(currNodeID)) {
-                const newCoords: DeckPosition = Utils.toDeckPosition(allWayCoords[i])
+                const newCoords: DeckPosition = Utils.geoToDeckPos(allWayCoords[i])
                 allGraphNodes.set(currNodeID, new GraphNode(currNodeID, newCoords))
 
                 // Init 'neighbour IDs' set for 'currNodeID'
@@ -64,9 +81,9 @@ export const createGraphData = (alLFeatures: FeatureCollection): GraphData => {
 
             // Lazily instantiate new graph node for 'otherNodeID' 
             // (assuming it doesn't exist yet)
-            const otherNodeID: number = Utils.getCoordHash(allWayCoords[i + 1])
+            const otherNodeID: number = Utils.getGeoPosHash(allWayCoords[i + 1])
             if (!allGraphNodes.has(otherNodeID)) {
-                const otherCoords: DeckPosition = Utils.toDeckPosition(allWayCoords[i + 1])
+                const otherCoords: DeckPosition = Utils.geoToDeckPos(allWayCoords[i + 1])
                 allGraphNodes.set(otherNodeID, new GraphNode(otherNodeID, otherCoords))
 
                 // Init 'neighbour IDs' set for 'otherNodeID'
@@ -76,12 +93,17 @@ export const createGraphData = (alLFeatures: FeatureCollection): GraphData => {
             // Bi-directional ways
             adjacencyList.get(currNodeID)?.add(otherNodeID)
             adjacencyList.get(otherNodeID)?.add(currNodeID)
+
+            fromToPairs.push({
+                from: allGraphNodes.get(currNodeID)?.position as DeckPosition,
+                to: allGraphNodes.get(otherNodeID)?.position as DeckPosition
+            })            
         }
     })
-    return { allGraphNodes: allGraphNodes, adjacencyList: adjacencyList }
+    return { allGraphNodes: allGraphNodes, adjacencyList: adjacencyList, fromToPairs: fromToPairs }
 }
 
-export const breadthFirstSearch = (graphData: GraphData): BfsFrameData[] => {
+export const breadthFirstSearch = (graphData: GraphData): FrameData[] => {
     if (graphData.allGraphNodes.size === 0) {
         return []
     }
@@ -91,7 +113,7 @@ export const breadthFirstSearch = (graphData: GraphData): BfsFrameData[] => {
     queueOfIDs.push(firstNodeID)
     let prevIdToProcess: number = firstNodeID
 
-    const allFrameData: BfsFrameData[] = []
+    const allFrameData: FrameData[] = []
     while (queueOfIDs.length > 0) {
         const idToProcess = queueOfIDs.shift() as number
         visitedIDs.add(idToProcess)
@@ -104,9 +126,40 @@ export const breadthFirstSearch = (graphData: GraphData): BfsFrameData[] => {
         })
 
         if (idToProcess !== prevIdToProcess) {
-            allFrameData.push(new BfsFrameData(prevIdToProcess, idToProcess))
-            prevIdToProcess = idToProcess
+            allFrameData.push(new FrameData(prevIdToProcess, idToProcess))
         }
+        prevIdToProcess = idToProcess
     }
     return allFrameData
 }
+
+export const depthFirstSearch = (graphData: GraphData): FrameData[] => {
+    if (graphData.allGraphNodes.size === 0) {
+        return []
+    }
+    const [[firstNodeID, _]] = graphData.allGraphNodes.entries()
+    const visitedIDs = new Set<number>()
+    const allFrameData: FrameData[] = DFS(firstNodeID, graphData, visitedIDs)
+    return allFrameData
+} 
+
+const DFS = (id: number, graphData: GraphData, visitedIDs: Set<number>): FrameData[] => {
+    visitedIDs.add(id)
+    const neighbourIDs = graphData.adjacencyList.get(id)
+    if (!neighbourIDs || neighbourIDs.size === 0) {
+        return []
+    }
+
+    const allFrameData: FrameData[] = []
+    neighbourIDs.forEach((idOfNeighbour: number) => {
+        if (visitedIDs.has(idOfNeighbour)) { return }
+
+        allFrameData.push(...DFS(idOfNeighbour, graphData, visitedIDs))
+        allFrameData.push({ fromID: id, toID: idOfNeighbour })
+    })
+    return allFrameData
+}
+
+// export const createLineMap = (): FromToPair[] => {
+    
+// }

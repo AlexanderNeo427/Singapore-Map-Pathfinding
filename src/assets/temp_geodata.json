@@ -1,0 +1,119 @@
+{
+    "type": "FeatureCollection",
+    "generator": "overpass-turbo",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL.",
+    "timestamp": "2025-02-20T16:52:43Z",
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {
+                "@id": "way/19780804",
+                "highway": "primary",
+                "lanes": "3",
+                "maxspeed": "70",
+                "name": "Ang Mo Kio Avenue 1",
+                "name:zh": "宏茂桥1道",
+                "oneway": "yes",
+                "source": "Yahoo aerial images",
+                "surface": "asphalt",
+                "turn:lanes": "through|through|through;right"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [103.863904, 1.35382],
+                    [103.8638199, 1.3538232],
+                    [103.8637393, 1.3538276],
+                    [103.8636568, 1.3538351],
+                    [103.863597, 1.3538414],
+                    [103.8635259, 1.353854]
+                ]
+            },
+            "id": "way/19780804"
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "@id": "way/21325407",
+                "bridge": "yes",
+                "foot": "no",
+                "highway": "primary",
+                "lanes": "2",
+                "layer": "1",
+                "maxspeed": "70",
+                "name": "Serangoon Viaduct",
+                "name:ms": "Jejambat Serangoon",
+                "name:zh": "实龙岗高架桥",
+                "oneway": "yes",
+                "surface": "asphalt"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [103.8707195, 1.3399343],
+                    [103.8707172, 1.3407354],
+                    [103.8705977, 1.3429764],
+                    [103.8705794, 1.34332],
+                    [103.8705742, 1.343687],
+                    [103.8706113, 1.3440643],
+                    [103.870695, 1.3445009],
+                    [103.8708309, 1.3449391],
+                    [103.8714786, 1.3463375],
+                    [103.8720334, 1.3474892],
+                    [103.8727284, 1.3486604],
+                    [103.8734516, 1.3495034],
+                    [103.8741726, 1.3503441],
+                    [103.8752972, 1.351433]
+                ]
+            },
+            "id": "way/21325407"
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "@id": "way/21328555",
+                "highway": "primary",
+                "lanes": "3",
+                "maxspeed": "60",
+                "name": "Lorong Chuan",
+                "name:zh": "罗弄泉",
+                "note": "Part of route estimated ???",
+                "oneway": "yes",
+                "source": "Yahoo aerial images",
+                "surface": "asphalt"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [103.8644904, 1.3540722],
+                    [103.8646352, 1.3541124],
+                    [103.8650948, 1.3542721]
+                ]
+            },
+            "id": "way/21328555"
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "@id": "way/21328894",
+                "highway": "primary",
+                "lanes": "6",
+                "maxspeed": "60",
+                "name": "Boundary Road",
+                "name:zh": "曼德里路",
+                "note": "Part of route estimated ???",
+                "oneway": "yes",
+                "source": "Yahoo aerial images",
+                "surface": "asphalt"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [103.8766192, 1.3523202],
+                    [103.876361, 1.3525576]
+                ]
+            },
+            "id": "way/21328894"
+        }
+    ]
+}
