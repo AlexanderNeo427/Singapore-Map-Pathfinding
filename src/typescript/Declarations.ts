@@ -1,5 +1,6 @@
 import { Position as DeckPosition } from "deck.gl"
 import { Feature, FeatureCollection, Position as GeoPosition, LineString } from "geojson";
+import { Utils } from "./Utils";
 
 // const DeckGLOverlay: React.FC<DeckProps> = props => {
 //    const map = useMap()
@@ -16,20 +17,7 @@ import { Feature, FeatureCollection, Position as GeoPosition, LineString } from 
 
 export type FromToPair = { from: DeckPosition, to: DeckPosition }
 
-export const Utils = {
-    hashCode(s: string): number {
-        let h = 0;
-        for (let i = 0; i < s.length; i++) {
-            h = Math.imul(31, h) + s.charCodeAt(i) | 0;
-        }
-        return h;
-    },
-    getGeoPosHash(geoCoord: GeoPosition): number {
-        return this.hashCode(`${geoCoord[0]}, ${geoCoord[1]}`)
-    },
-    geoToDeckPos(geoPos: GeoPosition): DeckPosition { return [geoPos[0], geoPos[1]] },
-    deckToGeoPos(deckPos: DeckPosition): DeckPosition { return [deckPos[0], deckPos[1]] },
-}
+export type StartEndPoint = { node: GraphNode, isStart: boolean }
 
 export class GraphNode {
     public readonly ID: number
@@ -96,54 +84,3 @@ export const createGraphData = (alLFeatures: FeatureCollection): GraphData => {
     return { allGraphNodes: allGraphNodes, adjacencyList: adjacencyList }
 }
 
-export const breadthFirstSearch = (graphData: GraphData): FrameData[] => {
-    if (graphData.allGraphNodes.size === 0) {
-        return []
-    }
-    const visitedIDs = new Set<number>()
-    const queueOfIDs = new Array<number>()
-    const [[firstNodeID, _]] = graphData.adjacencyList.entries()
-    queueOfIDs.push(firstNodeID)
-
-    const allFrameData: FrameData[] = []
-    while (queueOfIDs.length > 0) {
-        const idToProcess = queueOfIDs.shift() as number
-        visitedIDs.add(idToProcess)
-
-        const neighbourIDs = graphData.adjacencyList.get(idToProcess) as Set<number>
-        neighbourIDs.forEach((idOfNeighbour: number) => {
-            if (!visitedIDs.has(idOfNeighbour)) {
-                queueOfIDs.push(idOfNeighbour)
-                allFrameData.push({ fromID: idToProcess, toID: idOfNeighbour })
-            }
-        })
-    }
-    return allFrameData
-}
-
-export const depthFirstSearch = (graphData: GraphData): FrameData[] => {
-    if (graphData.allGraphNodes.size === 0) {
-        return []
-    }
-    const [[firstNodeID, _]] = graphData.allGraphNodes.entries()
-    const visitedIDs = new Set<number>()
-    const allFrameData: FrameData[] = DFS(firstNodeID, graphData, visitedIDs)
-    return allFrameData
-} 
-
-const DFS = (id: number, graphData: GraphData, visitedIDs: Set<number>): FrameData[] => {
-    visitedIDs.add(id)
-    const neighbourIDs = graphData.adjacencyList.get(id)
-    if (!neighbourIDs || neighbourIDs.size === 0) {
-        return []
-    }
-
-    const allFrameData: FrameData[] = []
-    neighbourIDs.forEach((idOfNeighbour: number) => {
-        if (visitedIDs.has(idOfNeighbour)) { return }
-
-        allFrameData.push(...DFS(idOfNeighbour, graphData, visitedIDs))
-        allFrameData.push({ fromID: id, toID: idOfNeighbour })
-    })
-    return allFrameData
-}
