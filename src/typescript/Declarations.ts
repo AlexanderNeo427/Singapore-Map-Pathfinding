@@ -15,6 +15,10 @@ import { Utils } from "./Utils";
 //    return null
 // }
 
+export type TemporalPosition = { pos: DeckPosition, timeStamp: number }
+
+export type TemporalFromToPair = { from: TemporalPosition, to: TemporalPosition }
+
 export type FromToPair = { from: DeckPosition, to: DeckPosition }
 
 export type StartEndPoint = { node: GraphNode, isStart: boolean }
@@ -44,11 +48,11 @@ export class GraphData {
     public adjacencyList: Map<number, Set<number>> = new Map()
 }
 
-export const createGraphData = (alLFeatures: FeatureCollection): GraphData => {
+export const createGraphData = (allFeatures: FeatureCollection): GraphData => {
     const allGraphNodes = new Map<number, GraphNode>()
     const adjacencyList = new Map<number, Set<number>>()
 
-    alLFeatures.features.forEach((feature: Feature) => {
+    allFeatures.features.forEach((feature: Feature) => {
         if (feature.geometry.type !== 'LineString') { return }
 
         const allWayCoords: GeoPosition[] = (feature.geometry as LineString).coordinates

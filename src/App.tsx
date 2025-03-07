@@ -1,27 +1,76 @@
 import { FeatureCollection } from 'geojson';
 import sg_geodata from './assets/sg_geodata.json'
 import React, { useEffect, useRef, useState } from 'react'
-import DeckGL, { Position as DeckPosition, GeoJsonLayer, LineLayer, PickingInfo, ScatterplotLayer } from 'deck.gl'
-import { createGraphData, FrameData, FromToPair, GraphData, GraphNode, StartEndPoint } from './typescript/Declarations';
-import { breadthFirstSearch } from './typescript/Algorithms';
+import DeckGL, { Position as DeckPosition, GeoJsonLayer, LineLayer, PickingInfo, ScatterplotLayer, TripsLayer } from 'deck.gl'
+import { createGraphData, FromToPair, GraphData, GraphNode, StartEndPoint, TemporalFromToPair } from './typescript/Declarations';
 import Navbar from './components/Navbar';
+import { breadthFirstSearch, getRandomTrip } from './typescript/Algorithms';
 
 const App: React.FC = () => {
    const m_graphData = useRef<GraphData>(new GraphData())
    const m_animHandle = useRef<number>(-1)
    const m_startNode = useRef<GraphNode | null>(null)
    const m_endNode = useRef<GraphNode | null>(null)
-   const [m_paths, setPaths] = useState<FromToPair[]>([])
+   // const m_debugTripData = useRef<TemporalFromToPair[]>([])
+
+   const m_frameTime = useRef<number>(0)
+   // const m_timeElapsed = useRef<number>(0)
+   const [m_timeElapsed, setTimeElapsed] = useState<number>(0)
+   const [m_trips, setTrips] = useState<TemporalFromToPair[]>([])
+
    const [m_isPickingStart, setIsPickingStart] = useState<boolean>(true)
 
    useEffect(() => {
       m_graphData.current = createGraphData(sg_geodata as FeatureCollection)
+
+      let frameTimerUpdatorHandle: number = 0
+      let prevTimeElapsed: number = 0
+      const tickFrameTimer = (globalTimeElapsed: number): void => {
+         m_frameTime.current = (globalTimeElapsed - prevTimeElapsed)
+         prevTimeElapsed = globalTimeElapsed
+         frameTimerUpdatorHandle = requestAnimationFrame(tickFrameTimer)
+      }
+      frameTimerUpdatorHandle = requestAnimationFrame(tickFrameTimer)
+
+      const loop = (): void => {
+         setTimeElapsed(oldTime => oldTime + m_frameTime.current)
+         m_animHandle.current = requestAnimationFrame(loop)
+      }
+      m_animHandle.current = requestAnimationFrame(loop)
+
+      return () => {
+         cancelAnimationFrame(m_animHandle.current)
+         cancelAnimationFrame(frameTimerUpdatorHandle)
+      }
    }, [])
 
-   const pathLayer = new LineLayer<FromToPair>({
-      id: 'Path Layer', data: m_paths,
-      getSourcePosition: d => d.from, getTargetPosition: d => d.to,
-      getWidth: 3, pickable: true, getColor: _ => [255, 200, 0]
+   // useEffect(() => {
+
+   // }, [m_trips])
+
+   // useEffect(() => {
+   //    // cancelAnimationFrame(m_animHandle.current) 
+   //    // const loop = (timeElapsed: number): void => {
+
+   //    // }
+   //    // m_animHandle.current = requestAnimationFrame(loop)
+   //    setTimeElapsed()
+   // }, [m_startTime])
+
+   // useEffect(() => console.log(m_timeElapsed), [m_timeElapsed])
+
+   const tripsLayer = new TripsLayer<TemporalFromToPair>({
+      id: 'Trips Layer',
+      data: m_trips,
+      getPath: d => [d.from.pos, d.to.pos],
+      getTimestamps: d => {
+         // const dx: number = d.from.pos[0] - d.to.pos[0]
+         // const dy: number = d.from.pos[1] - d.to.pos[1]
+         // const distance: number = Math.sqrt(dx * dx + dy * dy)
+         return [d.from.timeStamp * 50, d.to.timeStamp * 50]
+      },
+      getWidth: 2, pickable: true, getColor: _ => [255, 200, 0],
+      currentTime: m_timeElapsed, trailLength: Infinity
    });
 
    const geoJsonLayer = new GeoJsonLayer({
@@ -29,6 +78,12 @@ const App: React.FC = () => {
       filled: true, stroked: true, opacity: 0.9, lineWidthMinPixels: 5,
       getLineColor: _ => [70, 70, 70],
    })
+
+   // const debugLineLayer = new LineLayer<TemporalFromToPair>({
+   //    id: 'Debug Line Layer', data: m_debugTripData.current,
+   //    getSourcePosition: d => d.from.pos, getTargetPosition: d => d.to.pos,
+   //    getWidth: 4, pickable: true, getColor: _ => [200, 180, 80]
+   // })
 
    const getStartEndPoints = (): StartEndPoint[] => {
       const points: StartEndPoint[] = []
@@ -71,43 +126,14 @@ const App: React.FC = () => {
 
    const runClickHandler = (): void => {
       if (!m_startNode.current || !m_endNode.current) { return }
-      const allFrames: FrameData[] = breadthFirstSearch(
+
+      const tripData: TemporalFromToPair[] = breadthFirstSearch(
          m_startNode.current, m_endNode.current, m_graphData.current
       )
-      if (allFrames.length === 0) { return }
+      if (tripData.length === 0) { return }
 
-      setPaths([])
-      cancelAnimationFrame(m_animHandle.current)
-
-      const allGraphNodes: Map<number, GraphNode> = m_graphData.current.allGraphNodes
-      const loop = (): void => {
-         const frameData = allFrames.shift() as FrameData
-         if (!frameData || frameData === undefined) { return }
-
-         setPaths(oldPaths => {
-            const fromPos = allGraphNodes.get(frameData.fromID)?.position as DeckPosition
-            const toPos = allGraphNodes.get(frameData.toID)?.position as DeckPosition
-            return [...oldPaths, { from: fromPos, to: toPos }]
-         })
-         m_animHandle.current = requestAnimationFrame(loop)
-      }
-      loop()
-
-      // const loop = (): void => {
-      //    if (allFrames.length === 0) { return }
-      //       
-      //    const allGraphNodes: Map<number, GraphNode> = m_graphData.current.allGraphNodes
-      //    const frameData = allFrames.shift() as FrameData
-      //    if (!frameData || frameData === undefined) { return }
-      //      
-      //    setPaths(oldPaths => {
-      //       const fromPos = allGraphNodes.get(frameData.fromID)?.position as DeckPosition
-      //       const toPos = allGraphNodes.get(frameData.toID)?.position as DeckPosition
-      //       return [...oldPaths, { from: fromPos, to: toPos }]
-      //    })
-      //    setTimeout(loop)
-      // }
-      // loop()
+      setTrips(tripData)
+      setTimeElapsed(0)
    }
 
    return (
@@ -120,7 +146,9 @@ const App: React.FC = () => {
                   longitude: 103.87312657779727, latitude: 1.3506264285088163, zoom: 15
                }}
                controller
-               layers={[geoJsonLayer, pathLayer, startEndPointLayer]}
+               // layers={[geoJsonLayer, pathLayer, startEndPointLayer]}
+               layers={[geoJsonLayer, tripsLayer, startEndPointLayer]}
+               // layers={[geoJsonLayer, pathLayer, startEndPointLayer, debugLineLayer]}
                onClick={(info: PickingInfo) => {
                   if (!info.coordinate) { return }
                   const x: number = info.coordinate[0]
