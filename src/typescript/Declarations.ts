@@ -31,7 +31,7 @@ export type PathfindingParameters = {
 
 export class PathfindingResults {
     public readonly allTemporalPaths: TemporalPath[]
-    public readonly finalPath: DeckPosition[] | null
+    public finalPath: DeckPosition[] | null
 
     constructor(allTemporalPaths: TemporalPath[], finalPath: DeckPosition[] | null) {
         this.allTemporalPaths = allTemporalPaths

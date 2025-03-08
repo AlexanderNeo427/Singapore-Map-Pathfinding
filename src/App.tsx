@@ -1,13 +1,14 @@
 import { FeatureCollection } from 'geojson';
 import OverlayGUI from './components/OverlayGUI'
-import sg_geodata from './assets/sg_geodata.json'
+import roadData from './assets/roadData.json'
 import React, { useEffect, useRef, useState } from 'react'
-import { breadthFirstSearch, buildGraph, depthFirstSearch } from './typescript/Algorithms'
+import { breadthFirstSearch, buildGraph } from './typescript/Algorithms'
 import {
    GraphData, GraphNode, PathfindingAlgoType, PathfindingResults, StartEndPoint, TemporalPath
 } from './typescript/Declarations';
 import DeckGL, {
-   GeoJsonLayer, PickingInfo, ScatterplotLayer, TripsLayer
+   GeoJsonLayer, PickingInfo, Position as DeckPosition, ScatterplotLayer,
+   TripsLayer, LineLayer, AmbientLight, LightingEffect,
 } from 'deck.gl'
 
 const App: React.FC = () => {
@@ -22,9 +23,10 @@ const App: React.FC = () => {
    const m_frameTime = useRef<number>(0)
    const [m_timeElapsed, setTimeElapsed] = useState<number>(0)
    const [m_trips, setTrips] = useState<TemporalPath[]>([])
+   // const [m_finalPath, setFinalPath] = useState<DeckPosition[]>([])
 
    useEffect(() => {
-      m_graphData.current = buildGraph(sg_geodata as FeatureCollection)
+      m_graphData.current = buildGraph(roadData as FeatureCollection)
 
       let frameTimerUpdatorHandle: number = 0
       let prevTimeElapsed: number = 0
@@ -47,19 +49,42 @@ const App: React.FC = () => {
       }
    }, [])
 
-   const tripsLayer = new TripsLayer<TemporalPath>({
-      id: 'Trips Layer',
-      data: m_trips,
+   const pathfindingLayer = new TripsLayer<TemporalPath>({
+      id: 'Pathfinding Layer', data: m_trips,
       getPath: d => [d.from.pos, d.to.pos],
       getTimestamps: d => [d.from.timeStamp, d.to.timeStamp],
-      getWidth: 2, pickable: true, getColor: _ => [255, 200, 0], capRounded: true,
-      currentTime: m_timeElapsed, trailLength: Infinity
+      getWidth: 2, pickable: true, getColor: [255, 200, 0], capRounded: true,
+      currentTime: m_timeElapsed, trailLength: Infinity,
    });
 
-   const geoJsonLayer = new GeoJsonLayer({
-      id: 'Singapore GeoJSON', data: (sg_geodata as FeatureCollection),
+   // const buildingLayer = new GeoJsonLayer({
+   //    id: 'Building Layer',
+   //    data: buildingData,
+   //    extruded: true,
+   //    wireframe: false,
+   //    opacity: 0.5,
+   //    getPolygon: f => (f.geometry as Polygon).coordinates,
+   //    getElevation: _ => 120,
+   //    getFillColor: _ => [200, 180, 120],
+   // })
+
+   // const buildingLayer = new GeoJsonLayer({
+   //    id: 'Building Layer', data: (buildingData as FeatureCollection),
+   //    lineWidthMinPixels: 5, extruded: true,
+   //    filled: true, stroked: false, opacity: 0.3,
+   //    getElevation: _ => 130, getLineColor: _ => [255, 255, 255],
+   // })
+
+   // const finalPathLayer = new LineLayer<DeckPosition>({
+   //    id: 'Final Path Layer', 
+   //    data: m_finalPath,
+   //
+   // })
+
+   const roadLayer = new GeoJsonLayer({
+      id: 'Road Layer', data: (roadData as FeatureCollection),
       filled: true, stroked: false, opacity: 0.9, lineWidthMinPixels: 5,
-      getLineColor: _ => [70, 70, 70],
+      getLineColor: [70, 70, 70],
    })
 
    const startEndPointLayer = new ScatterplotLayer<StartEndPoint>({
@@ -75,14 +100,17 @@ const App: React.FC = () => {
          return points
       })(),
       getFillColor: d => d.isStart ? [255, 0, 0] : [0, 255, 0],
-      getRadius: _ => 18, getPosition: d => d.node.position
+      getRadius: 18, getPosition: d => d.node.position
    })
+
+   const ambientLight = new AmbientLight({ color: [255, 255, 255], intensity: 1.0 });
+   const lightingEffect = new LightingEffect({ ambientLight })
 
    const mapClickHandler = (clickCoord: [number, number], isPickingStart: boolean): void => {
       let nodeClosestToClick: (GraphNode | null) = null
       let minDist: number = 9999999
 
-      m_graphData.current.allGraphNodes.forEach((node, _) => {
+      m_graphData.current.allGraphNodes.forEach(node => {
          const dx: number = clickCoord[0] - node.position[0]
          const dy: number = clickCoord[1] - node.position[1]
          const distToCoord: number = Math.sqrt(dx * dx + dy * dy)
@@ -124,12 +152,13 @@ const App: React.FC = () => {
                initialViewState={{
                   longitude: 103.87312657779727, latitude: 1.3506264285088163, zoom: 15
                }}
+               effects={[lightingEffect]}
                controller
-               layers={[geoJsonLayer, tripsLayer, startEndPointLayer]}
+               layers={[roadLayer, pathfindingLayer, startEndPointLayer]}
                onClick={(info: PickingInfo) => {
                   if (!info.coordinate) { return }
-                  const x: number = info.coordinate[0]
-                  const y: number = info.coordinate[1]
+                  const x = info.coordinate[0] as number
+                  const y = info.coordinate[1] as number
                   mapClickHandler([x, y], m_isPickingStart)
                }}
             />
