@@ -51,12 +51,14 @@ export const breadthFirstSearch: PathfindingAlgoType = (
 ): PathfindingResults => {
 
     if (params.graphData.allGraphNodes.size === 0) {
-        return new PathfindingResults([], [])
+        return {} as PathfindingResults
     }
     const allGraphNodes: Map<number, GraphNode> = params.graphData.allGraphNodes
     const adjacencyList: Map<number, Set<number>> = params.graphData.adjacencyList
 
-    const pathfindResult = new PathfindingResults([], []) // To be returned
+    const pathfindResult = { // To be returned
+        allTemporalPaths: [], finalPath: [], totalDuration: 0
+    } as PathfindingResults
     const visitedNodes = new Set<GraphNode>()
     const queueOfPaths = new Array<Array<GraphNode>>()
     queueOfPaths.push([params.startNode])
@@ -85,7 +87,10 @@ export const breadthFirstSearch: PathfindingAlgoType = (
                 })
 
                 if (neighbourNode === params.endNode) {  // Found!
+                    pathSoFar.push(neighbourNode)
                     pathfindResult.finalPath = pathSoFar.map(node => node.position)
+
+                    pathfindResult.totalDuration = (startTime + longestTravelTime)
                     return pathfindResult
                 }
             }
@@ -93,6 +98,25 @@ export const breadthFirstSearch: PathfindingAlgoType = (
         startTime += longestTravelTime
     }
     return pathfindResult
+}
+
+export const convertDeckPositionsToTemporalPath = (
+    positions: DeckPosition[], startTime: number
+): TemporalPath[] => {
+    const allTemporalPaths: TemporalPath[] = []
+
+    let time: number = startTime
+    for (let i = 0; i < (positions.length - 1); i++) {
+        const distBetweenNodes: number = Utils.getDeckDistance(positions[i], positions[i + 1])
+        const travelTime: number = distBetweenNodes / 0.000006
+
+        allTemporalPaths.push({
+            from: { pos: positions[i], timeStamp: time },
+            to: { pos: positions[i + 1], timeStamp: (time + travelTime) }
+        })
+        time += travelTime
+    }
+    return allTemporalPaths
 }
 
 // export const AStar: PathfindingAlgoType = (

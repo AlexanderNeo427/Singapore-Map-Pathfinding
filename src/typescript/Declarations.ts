@@ -29,12 +29,8 @@ export type PathfindingParameters = {
     graphData: GraphData
 }
 
-export class PathfindingResults {
-    public readonly allTemporalPaths: TemporalPath[]
-    public finalPath: DeckPosition[] | null
-
-    constructor(allTemporalPaths: TemporalPath[], finalPath: DeckPosition[] | null) {
-        this.allTemporalPaths = allTemporalPaths
-        this.finalPath = finalPath
-    }
+export type PathfindingResults = {
+    allTemporalPaths: TemporalPath[]
+    finalPath: DeckPosition[] | null
+    totalDuration: number
 }

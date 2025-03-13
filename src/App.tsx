@@ -2,13 +2,15 @@ import { FeatureCollection } from 'geojson';
 import OverlayGUI from './components/OverlayGUI'
 import roadData from './assets/roadData.json'
 import React, { useEffect, useRef, useState } from 'react'
-import { breadthFirstSearch, buildGraph } from './typescript/Algorithms'
+import {
+   breadthFirstSearch, buildGraph, convertDeckPositionsToTemporalPath
+} from './typescript/Algorithms'
 import {
    GraphData, GraphNode, PathfindingAlgoType, PathfindingResults, StartEndPoint, TemporalPath
 } from './typescript/Declarations';
 import DeckGL, {
-   GeoJsonLayer, PickingInfo, Position as DeckPosition, ScatterplotLayer,
-   TripsLayer, LineLayer, AmbientLight, LightingEffect,
+   PickingInfo, Position as DeckPosition,
+   ScatterplotLayer, TripsLayer, GeoJsonLayer
 } from 'deck.gl'
 
 const App: React.FC = () => {
@@ -20,10 +22,12 @@ const App: React.FC = () => {
    const [m_isPickingStart, setIsPickingStart] = useState<boolean>(true)
 
    const m_animHandle = useRef<number>(-1)
-   const m_frameTime = useRef<number>(0)
+   const m_frameTime = useRef<number>(0) // Read from this for the frame time
    const [m_timeElapsed, setTimeElapsed] = useState<number>(0)
    const [m_trips, setTrips] = useState<TemporalPath[]>([])
-   // const [m_finalPath, setFinalPath] = useState<DeckPosition[]>([])
+
+   const [m_finalPathTimer, setFinalPathTimer] = useState<number>(0)
+   const [m_finalPath, setFinalPath] = useState<TemporalPath[]>([])
 
    useEffect(() => {
       m_graphData.current = buildGraph(roadData as FeatureCollection)
@@ -39,6 +43,7 @@ const App: React.FC = () => {
 
       const loop = (): void => {
          setTimeElapsed(oldTime => oldTime + m_frameTime.current)
+         setFinalPathTimer(oldTime => oldTime + m_frameTime.current)
          m_animHandle.current = requestAnimationFrame(loop)
       }
       m_animHandle.current = requestAnimationFrame(loop)
@@ -48,6 +53,11 @@ const App: React.FC = () => {
          cancelAnimationFrame(frameTimerUpdatorHandle)
       }
    }, [])
+
+   // useEffect(() => {
+   //    if (!m_finalPath || m_finalPath === null) { return }
+   //
+   // }, [m_finalPath])
 
    const pathfindingLayer = new TripsLayer<TemporalPath>({
       id: 'Pathfinding Layer', data: m_trips,
@@ -87,6 +97,7 @@ const App: React.FC = () => {
       getLineColor: [70, 70, 70],
    })
 
+   const START_END_POINT_SIZE = 6
    const startEndPointLayer = new ScatterplotLayer<StartEndPoint>({
       id: 'Start & End Point Layer',
       data: ((): StartEndPoint[] => {
@@ -100,11 +111,20 @@ const App: React.FC = () => {
          return points
       })(),
       getFillColor: d => d.isStart ? [255, 0, 0] : [0, 255, 0],
-      getRadius: 18, getPosition: d => d.node.position
+      radiusMinPixels: START_END_POINT_SIZE,
+      radiusMaxPixels: START_END_POINT_SIZE,
+      getRadius: START_END_POINT_SIZE,
+      stroked: true, getPosition: d => d.node.position,
+      getLineWidth: 3, lineWidthMinPixels: 2, lineWidthMaxPixels: 3,
    })
 
-   const ambientLight = new AmbientLight({ color: [255, 255, 255], intensity: 1.0 });
-   const lightingEffect = new LightingEffect({ ambientLight })
+   const finalPathLayer = new TripsLayer<TemporalPath>({
+      id: 'Final Path Layer', data: m_finalPath,
+      getPath: d => [d.from.pos, d.to.pos],
+      getTimestamps: d => [d.from.timeStamp, d.to.timeStamp],
+      getWidth: 3, pickable: true, getColor: [243, 5, 250], capRounded: true,
+      currentTime: m_timeElapsed, trailLength: Infinity,
+   })
 
    const mapClickHandler = (clickCoord: [number, number], isPickingStart: boolean): void => {
       let nodeClosestToClick: (GraphNode | null) = null
@@ -141,6 +161,12 @@ const App: React.FC = () => {
       if (results.finalPath === null) { return }
 
       setTrips(results.allTemporalPaths)
+
+      const finalTemporalPath: TemporalPath[] = convertDeckPositionsToTemporalPath(
+         results.finalPath, results.totalDuration
+      )
+      setFinalPath(finalTemporalPath)
+
       setTimeElapsed(0)
    }
 
@@ -152,9 +178,8 @@ const App: React.FC = () => {
                initialViewState={{
                   longitude: 103.87312657779727, latitude: 1.3506264285088163, zoom: 15
                }}
-               effects={[lightingEffect]}
                controller
-               layers={[roadLayer, pathfindingLayer, startEndPointLayer]}
+               layers={[roadLayer, pathfindingLayer, finalPathLayer, startEndPointLayer]}
                onClick={(info: PickingInfo) => {
                   if (!info.coordinate) { return }
                   const x = info.coordinate[0] as number
