@@ -75,6 +75,7 @@ export const breadthFirstSearch: PathfindingAlgoType = (
             const neighbourNode = allGraphNodes.get(idOfNeighbour) as GraphNode
             if (!visitedNodes.has(neighbourNode)) {
                 queueOfPaths.push([...pathSoFar, neighbourNode] as GraphNode[])
+                visitedNodes.add(neighbourNode)
 
                 const distToNeighbour = Utils.getNodeDistance(nodeToProcess, neighbourNode)
                 const timeSeconds: number = Utils.distanceToTime(distToNeighbour)
@@ -107,8 +108,8 @@ export const convertDeckPositionsToTemporalPath = (
 
     let time: number = startTime
     for (let i = 0; i < (positions.length - 1); i++) {
-        const distBetweenNodes: number = Utils.getDeckDistance(positions[i], positions[i + 1])
-        const travelTime: number = distBetweenNodes / 0.000006
+        const distBetweenNodes = Utils.getDeckDistance(positions[i], positions[i + 1])
+        const travelTime = Utils.distanceToTime(distBetweenNodes)
 
         allTemporalPaths.push({
             from: { pos: positions[i], timeStamp: time },

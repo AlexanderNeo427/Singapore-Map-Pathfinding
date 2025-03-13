@@ -25,8 +25,6 @@ const App: React.FC = () => {
    const m_frameTime = useRef<number>(0) // Read from this for the frame time
    const [m_timeElapsed, setTimeElapsed] = useState<number>(0)
    const [m_trips, setTrips] = useState<TemporalPath[]>([])
-
-   const [m_finalPathTimer, setFinalPathTimer] = useState<number>(0)
    const [m_finalPath, setFinalPath] = useState<TemporalPath[]>([])
 
    useEffect(() => {
@@ -43,7 +41,6 @@ const App: React.FC = () => {
 
       const loop = (): void => {
          setTimeElapsed(oldTime => oldTime + m_frameTime.current)
-         setFinalPathTimer(oldTime => oldTime + m_frameTime.current)
          m_animHandle.current = requestAnimationFrame(loop)
       }
       m_animHandle.current = requestAnimationFrame(loop)
@@ -54,42 +51,24 @@ const App: React.FC = () => {
       }
    }, [])
 
-   // useEffect(() => {
-   //    if (!m_finalPath || m_finalPath === null) { return }
-   //
-   // }, [m_finalPath])
-
    const pathfindingLayer = new TripsLayer<TemporalPath>({
       id: 'Pathfinding Layer', data: m_trips,
       getPath: d => [d.from.pos, d.to.pos],
       getTimestamps: d => [d.from.timeStamp, d.to.timeStamp],
-      getWidth: 2, pickable: true, getColor: [255, 200, 0], capRounded: true,
+      getWidth: 2.5, pickable: true, capRounded: true,
       currentTime: m_timeElapsed, trailLength: Infinity,
+      getColor: [255, 200, 0, 130]
    });
 
-   // const buildingLayer = new GeoJsonLayer({
-   //    id: 'Building Layer',
-   //    data: buildingData,
-   //    extruded: true,
-   //    wireframe: false,
-   //    opacity: 0.5,
-   //    getPolygon: f => (f.geometry as Polygon).coordinates,
-   //    getElevation: _ => 120,
-   //    getFillColor: _ => [200, 180, 120],
-   // })
-
-   // const buildingLayer = new GeoJsonLayer({
-   //    id: 'Building Layer', data: (buildingData as FeatureCollection),
-   //    lineWidthMinPixels: 5, extruded: true,
-   //    filled: true, stroked: false, opacity: 0.3,
-   //    getElevation: _ => 130, getLineColor: _ => [255, 255, 255],
-   // })
-
-   // const finalPathLayer = new LineLayer<DeckPosition>({
-   //    id: 'Final Path Layer', 
-   //    data: m_finalPath,
-   //
-   // })
+   const MAX_TIME_DIFF_MS = 1200
+   const pathfindingGlowLayer = new TripsLayer<TemporalPath>({
+      id: 'Pathfinding Glow Layer', data: m_trips,
+      getPath: d => [d.from.pos, d.to.pos],
+      getTimestamps: d => [d.from.timeStamp, d.to.timeStamp],
+      getWidth: 5, pickable: true, capRounded: true,
+      currentTime: m_timeElapsed, trailLength: MAX_TIME_DIFF_MS,
+      getColor: [0, 200, 255]
+   });
 
    const roadLayer = new GeoJsonLayer({
       id: 'Road Layer', data: (roadData as FeatureCollection),
@@ -97,7 +76,7 @@ const App: React.FC = () => {
       getLineColor: [70, 70, 70],
    })
 
-   const START_END_POINT_SIZE = 6
+   const START_END_POINT_SIZE = 7
    const startEndPointLayer = new ScatterplotLayer<StartEndPoint>({
       id: 'Start & End Point Layer',
       data: ((): StartEndPoint[] => {
@@ -122,8 +101,8 @@ const App: React.FC = () => {
       id: 'Final Path Layer', data: m_finalPath,
       getPath: d => [d.from.pos, d.to.pos],
       getTimestamps: d => [d.from.timeStamp, d.to.timeStamp],
-      getWidth: 3, pickable: true, getColor: [243, 5, 250], capRounded: true,
-      currentTime: m_timeElapsed, trailLength: Infinity,
+      getWidth: 3.8, pickable: true, capRounded: true,
+      getColor: [170, 0, 255], currentTime: m_timeElapsed, trailLength: Infinity,
    })
 
    const mapClickHandler = (clickCoord: [number, number], isPickingStart: boolean): void => {
@@ -141,7 +120,7 @@ const App: React.FC = () => {
       })
 
       if (!nodeClosestToClick || nodeClosestToClick === null) { return }
-      if (minDist > 0.0005) { return } // Tolerance
+      if (minDist > 0.0004) { return } // Tolerance
 
       if (isPickingStart) { m_startNode.current = nodeClosestToClick }
       else { m_endNode.current = nodeClosestToClick }
@@ -179,7 +158,7 @@ const App: React.FC = () => {
                   longitude: 103.87312657779727, latitude: 1.3506264285088163, zoom: 15
                }}
                controller
-               layers={[roadLayer, pathfindingLayer, finalPathLayer, startEndPointLayer]}
+               layers={[roadLayer, pathfindingLayer, pathfindingGlowLayer, finalPathLayer, startEndPointLayer]}
                onClick={(info: PickingInfo) => {
                   if (!info.coordinate) { return }
                   const x = info.coordinate[0] as number
