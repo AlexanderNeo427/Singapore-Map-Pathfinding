@@ -7,7 +7,7 @@ import {
    dijkstra
 } from './typescript/Algorithms'
 import {
-   GraphData, GraphNode, PathfindingAlgoType, PathfindingResults, StartEndPoint, TemporalPath
+   GraphData, GraphNode, PATHFINDING_ALGO, PathfindingAlgoType, PathfindingResults, StartEndPoint, TemporalPath
 } from './typescript/Declarations';
 import DeckGL, {
    PickingInfo, Position as DeckPosition,
@@ -137,7 +137,7 @@ const App: React.FC = () => {
          endNode: m_endNode.current,
          graphData: m_graphData.current
       })
-      console.log("Pathfinding Results: ", results)
+      // console.log("Pathfinding Results: ", results)
       if (results.finalPath === null) { return }
 
       setTrips(results.allTemporalPaths)
@@ -146,7 +146,6 @@ const App: React.FC = () => {
          results.finalPath, results.totalDuration
       )
       setFinalPath(finalTemporalPath)
-
       setTimeElapsed(0)
    }
 
@@ -167,7 +166,22 @@ const App: React.FC = () => {
                   mapClickHandler([x, y], m_isPickingStart)
                }}
             />
-            <OverlayGUI runClickHandler={runClickHandler} />
+            <OverlayGUI
+               runClickHandler={runClickHandler}
+               algoSetter={algo => {
+                  switch (algo) {
+                     case PATHFINDING_ALGO.BFS:
+                        m_pathfinder.current = breadthFirstSearch
+                        break
+                     case PATHFINDING_ALGO.DIJKSTRA:
+                        m_pathfinder.current = dijkstra 
+                        break
+                     default: 
+                        m_pathfinder.current = breadthFirstSearch
+                        break
+                  }
+               }}
+            />
          </div>
       </div>
    )

@@ -1,11 +1,11 @@
 import Utils from "./Utils"
 import { Position as DeckPosition } from "deck.gl"
+import { MinPriorityQueue } from "@datastructures-js/priority-queue"
 import {
     GraphData, GraphNode, TemporalPath, TemporalPosition,
     PathfindingParameters, PathfindingResults, PathfindingAlgoType,
 } from "./Declarations"
 import { Feature, FeatureCollection, Position as GeoPosition, LineString } from "geojson"
-import { ICompare, MinPriorityQueue, PriorityQueue } from "@datastructures-js/priority-queue"
 
 export const buildGraph = (allFeatures: FeatureCollection): GraphData => {
     const allGraphNodes = new Map<number, GraphNode>()
@@ -126,7 +126,6 @@ export const dijkstra: PathfindingAlgoType = (
         allTemporalPaths: [], finalPath: null, totalDuration: 0
     } as PathfindingResults
 
-
     let startTime: number = 0
     while (!openList.isEmpty()) {
         const currNode = openList.dequeue() as GraphNode
@@ -147,8 +146,8 @@ export const dijkstra: PathfindingAlgoType = (
         const allNeighbourIDs = graphData.adjacencyList.get(currNode.ID) as Set<number>
         for (const neighbourID of allNeighbourIDs) {
             const neighbourNode = graphData.allGraphNodes.get(neighbourID) as GraphNode
-            if (closedList.has(neighbourNode)) { continue } // Skip visited neighbours
-            closedList.add(neighbourNode) // Mark neighbour as "visited"
+
+            if (closedList.has(neighbourNode)) { continue }
 
             const oldCostToNeighbour = allMinCosts.get(neighbourNode) as number
             const distToNeighbour = Utils.getNodeDistance(currNode, neighbourNode)
@@ -172,6 +171,7 @@ export const dijkstra: PathfindingAlgoType = (
                 if (openList.contains(node => node === neighbourNode)) {
                     const nodeToReinsert = openList.remove(node => node === neighbourNode)[0]  
                     allMinCosts.set(nodeToReinsert, computedCostToNeighbour)
+                    openList.enqueue(nodeToReinsert)
                 }
                 else {
                     openList.push(neighbourNode)
@@ -202,52 +202,8 @@ export const convertDeckPositionsToTemporalPath = (
     return allTemporalPaths
 }
 
-// export const AStar: PathfindingAlgoType = (
-//     params: PathfindingParameters
-// ): PathfindingResults => {
-
-// }
-
-// export const depthFirstSearch: PathfindingAlgoType = (
-//     params: PathfindingParameters
-// ): PathfindingResults => {
-//     return dfsHelper(params)
-// }
-
-// const dfsHelper = (
-//     params: PathfindingParameters, visitedIDs = new Set<number>(),
-//     results = new PathfindingResults([], []), startTime: number = 0, depth = 0
-// ): PathfindingResults => {
-
-//     console.log("Depth: ", depth)
-//     visitedIDs.add(params.startNode.ID)
-
-//     // Base case
-//     const allNeighbourIDs = params.graphData.adjacencyList.get(params.startNode.ID)
-//     allNeighbourIDs?.forEach((idOfNeighbour: number) => {
-//         const neighbourNode = params.graphData.allGraphNodes.get(idOfNeighbour) as GraphNode
-//         const distToNeighbour = Utils.getNodeDistance(params.startNode, neighbourNode)
-//         const timeToNeighbour = Utils.distanceToTime(distToNeighbour)
-
-//         results.allTemporalPaths.push({
-//             from: { pos: params.startNode.position, timeStamp: startTime },
-//             to: { pos: params.endNode.position, timeStamp: (startTime + timeToNeighbour) }
-//         })
-
-//         if (idOfNeighbour === params.endNode.ID) { return results } // Found!
-
-//         const paramsWithNewStartNode = {
-//             ...params,
-//             startNode: params.graphData.allGraphNodes.get(idOfNeighbour)
-//         } as PathfindingParameters
-//         return dfsHelper(
-//             paramsWithNewStartNode, visitedIDs, results, (startTime + timeToNeighbour), depth + 1
-//         )
-//     })
-//     return results
-// }
-
-export const getRandomTrip = (graphData: GraphData): TemporalPath[] => {
+// For debugging
+export const getRandomTrip = (graphData: GraphData): TemporalPath[] => { 
     type NullableGraphNode = GraphNode | null
     const getRandomNeighbour = (node: GraphNode): NullableGraphNode => {
         const neighbourIDs = graphData.adjacencyList.get(node.ID)

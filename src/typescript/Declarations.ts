@@ -1,5 +1,13 @@
 import { Position as DeckPosition } from "deck.gl"
 
+export enum PATHFINDING_ALGO {
+    BFS,
+    DFS,
+    AStar,
+    DIJKSTRA,
+    BELLMAN_FORD,
+}
+
 export type PathfindingAlgoType = (params: PathfindingParameters) => PathfindingResults
 
 export type TemporalPosition = { pos: DeckPosition, timeStamp: number }

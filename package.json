@@ -1,5 +1,5 @@
 {
-  "name": "pathfinding-visualizer",
+  "name": "real-map-pathfinding",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -17,6 +17,7 @@
     "deck.gl": "^9.1.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-select": "^5.10.1",
     "tailwindcss": "^4.0.9"
   },
   "devDependencies": {
