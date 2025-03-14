@@ -26,7 +26,9 @@ const OverlayGUI: React.FC<OverlayProps> = props => {
                   options={[
                      { value: PATHFINDING_ALGO.BFS, label: "Breadth First Search" },
                      { value: PATHFINDING_ALGO.DIJKSTRA, label: "Dijkstra's Algorithm" },
+                     { value: PATHFINDING_ALGO.AStar, label: "A* Algorithm" },
                   ]}
+                  defaultValue={{ value: PATHFINDING_ALGO.BFS, label: "Breadth First Search" }}
                   onChange={algo => {
                      props.algoSetter(algo?.value || PATHFINDING_ALGO.BFS)
                   }}

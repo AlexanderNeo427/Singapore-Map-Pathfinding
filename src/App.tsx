@@ -3,6 +3,7 @@ import OverlayGUI from './components/OverlayGUI'
 import roadData from './assets/roadData.json'
 import React, { useEffect, useRef, useState } from 'react'
 import {
+   AStar,
    breadthFirstSearch, buildGraph, convertDeckPositionsToTemporalPath,
    dijkstra
 } from './typescript/Algorithms'
@@ -61,7 +62,7 @@ const App: React.FC = () => {
       getColor: [255, 200, 0, 190]
    });
 
-   const MAX_TIME_DIFF_MS = 1200
+   const MAX_TIME_DIFF_MS = 900
    const pathfindingGlowLayer = new TripsLayer<TemporalPath>({
       id: 'Pathfinding Glow Layer', data: m_trips,
       getPath: d => [d.from.pos, d.to.pos],
@@ -174,9 +175,12 @@ const App: React.FC = () => {
                         m_pathfinder.current = breadthFirstSearch
                         break
                      case PATHFINDING_ALGO.DIJKSTRA:
-                        m_pathfinder.current = dijkstra 
+                        m_pathfinder.current = dijkstra
                         break
-                     default: 
+                     case PATHFINDING_ALGO.AStar:
+                        m_pathfinder.current = AStar
+                        break
+                     default:
                         m_pathfinder.current = breadthFirstSearch
                         break
                   }

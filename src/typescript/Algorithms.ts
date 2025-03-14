@@ -48,21 +48,21 @@ export const buildGraph = (allFeatures: FeatureCollection): GraphData => {
 }
 
 export const breadthFirstSearch: PathfindingAlgoType = (
-    params: PathfindingParameters
+    { startNode, endNode, graphData }: PathfindingParameters
 ): PathfindingResults => {
 
-    if (params.graphData.allGraphNodes.size === 0) {
+    if (graphData.allGraphNodes.size === 0) {
         return {} as PathfindingResults
     }
-    const allGraphNodes: Map<number, GraphNode> = params.graphData.allGraphNodes
-    const adjacencyList: Map<number, Set<number>> = params.graphData.adjacencyList
+    const allGraphNodes: Map<number, GraphNode> = graphData.allGraphNodes
+    const adjacencyList: Map<number, Set<number>> = graphData.adjacencyList
 
     const pathfindResult = { // To be returned
         allTemporalPaths: [], finalPath: [], totalDuration: 0
     } as PathfindingResults
     const visitedNodes = new Set<GraphNode>()
     const queueOfPaths = new Array<Array<GraphNode>>()
-    queueOfPaths.push([params.startNode])
+    queueOfPaths.push([startNode])
     let startTime: number = 0
 
     while (queueOfPaths.length > 0) {
@@ -88,7 +88,7 @@ export const breadthFirstSearch: PathfindingAlgoType = (
                     to: { pos: neighbourNode.position, timeStamp: endTime },
                 })
 
-                if (neighbourNode === params.endNode) {  // Found!
+                if (neighbourNode === endNode) {  // Found!
                     pathSoFar.push(neighbourNode)
                     pathfindResult.finalPath = pathSoFar.map(node => node.position)
 
@@ -105,6 +105,7 @@ export const breadthFirstSearch: PathfindingAlgoType = (
 export const dijkstra: PathfindingAlgoType = (
     { startNode, endNode, graphData }: PathfindingParameters
 ): PathfindingResults => {
+
     // Initialize all costs to INFINITY, all predecessors to NULL
     const allMinCosts = new Map<GraphNode, number>()
     const predecessors = new Map<GraphNode, (GraphNode | null)>()
@@ -114,7 +115,6 @@ export const dijkstra: PathfindingAlgoType = (
     })
 
     // Initialize priority queue + first node (and its start cost to 0)
-    const closedList = new Set<GraphNode>()
     const openList = new MinPriorityQueue<GraphNode>(node => {
         return allMinCosts.get(node) || Infinity
     })
@@ -129,8 +129,6 @@ export const dijkstra: PathfindingAlgoType = (
     let startTime: number = 0
     while (!openList.isEmpty()) {
         const currNode = openList.dequeue() as GraphNode
-        closedList.add(currNode)
-
         if (currNode === endNode) { // Found!
             out.finalPath = []
             out.totalDuration = startTime
@@ -147,8 +145,6 @@ export const dijkstra: PathfindingAlgoType = (
         for (const neighbourID of allNeighbourIDs) {
             const neighbourNode = graphData.allGraphNodes.get(neighbourID) as GraphNode
 
-            if (closedList.has(neighbourNode)) { continue }
-
             const oldCostToNeighbour = allMinCosts.get(neighbourNode) as number
             const distToNeighbour = Utils.getNodeDistance(currNode, neighbourNode)
             const computedCostToNeighbour = (
@@ -159,7 +155,7 @@ export const dijkstra: PathfindingAlgoType = (
             const timeToTravel: number = Utils.distanceToTime(distToNeighbour)
             longestTravelTime = Math.max(timeToTravel, longestTravelTime)
             out.allTemporalPaths.push({
-                from: { pos: currNode.position, timeStamp: startTime }, 
+                from: { pos: currNode.position, timeStamp: startTime },
                 to: { pos: neighbourNode.position, timeStamp: (startTime + timeToTravel) }
             })
 
@@ -169,7 +165,7 @@ export const dijkstra: PathfindingAlgoType = (
                 predecessors.set(neighbourNode, currNode)
 
                 if (openList.contains(node => node === neighbourNode)) {
-                    const nodeToReinsert = openList.remove(node => node === neighbourNode)[0]  
+                    const nodeToReinsert = openList.remove(node => node === neighbourNode)[0]
                     allMinCosts.set(nodeToReinsert, computedCostToNeighbour)
                     openList.enqueue(nodeToReinsert)
                 }
@@ -179,6 +175,85 @@ export const dijkstra: PathfindingAlgoType = (
             }
         }
         startTime += longestTravelTime
+    }
+    return out
+}
+
+export const AStar: PathfindingAlgoType = (
+    { startNode, endNode, graphData }: PathfindingParameters
+): PathfindingResults => {
+
+    // Initialize data needed for pathfinding
+    const predecessors = new Map<GraphNode, (GraphNode | null)>()
+    const gCosts = new Map<GraphNode, number>()
+    graphData.allGraphNodes.forEach((node, _) => {
+        predecessors.set(node, null)
+        gCosts.set(node, Infinity)
+    })
+
+    // Initialize return data
+    const out = {
+        allTemporalPaths: [], finalPath: null, totalDuration: 0
+    } as PathfindingResults
+
+    // Initialize open/close lists, starting node - Implicit f-cost calculation
+    const priorityQueue = new MinPriorityQueue<GraphNode>(node => {
+        return (gCosts.get(node) as number) + Utils.getNodeDistance(node, endNode)
+    })
+    gCosts.set(startNode, 0)
+    priorityQueue.enqueue(startNode)
+
+    let startTime: number = 0
+    while (!priorityQueue.isEmpty()) {
+        const currNode = priorityQueue.dequeue() as GraphNode // Retrieve min f-cost
+
+        if (currNode === endNode) { // Found! Reconstruct path and return
+            out.finalPath = []
+            let nodeItr: (GraphNode | null) = currNode
+            while (nodeItr !== null) {
+                out.finalPath.unshift(nodeItr.position)
+                out.totalDuration = startTime
+                nodeItr = predecessors.get(nodeItr) || null
+            }
+            return out
+        }
+
+        const allNeighbours: GraphNode[] = (() => {
+            const neighbourIDs = [...graphData.adjacencyList.get(currNode.ID) as Set<number>]
+            return neighbourIDs.map(idOfNeighbour => {
+                return graphData.allGraphNodes.get(idOfNeighbour) as GraphNode
+            })
+        })()
+
+        let maxTravelTime: number = 0
+        for (const neighbour of allNeighbours) {
+            const distToNeighbour = Utils.getNodeDistance(currNode, neighbour)
+            const gCostTentative = (gCosts.get(currNode) as number) + distToNeighbour
+
+            const timeToNeighbour = Utils.distanceToTime(distToNeighbour)
+            maxTravelTime = Math.max(maxTravelTime, timeToNeighbour)
+            out.allTemporalPaths.push({
+                from: { pos: currNode.position, timeStamp: startTime },
+                to: { pos: neighbour.position, timeStamp: (startTime + timeToNeighbour) },
+            })
+
+            if (gCostTentative < (gCosts.get(neighbour) as number)) {
+                gCosts.set(neighbour, gCostTentative)
+                predecessors.set(neighbour, currNode)
+
+                const nodeToReinsert: (GraphNode | null) = priorityQueue.remove(node => {
+                    return node === neighbour
+                })[0] || null
+
+                if (nodeToReinsert !== null) {
+                    priorityQueue.enqueue(nodeToReinsert)
+                }
+                else {
+                    priorityQueue.enqueue(neighbour)
+                }
+            }
+        }
+        startTime += maxTravelTime
     }
     return out
 }
@@ -203,7 +278,7 @@ export const convertDeckPositionsToTemporalPath = (
 }
 
 // For debugging
-export const getRandomTrip = (graphData: GraphData): TemporalPath[] => { 
+export const getRandomTrip = (graphData: GraphData): TemporalPath[] => {
     type NullableGraphNode = GraphNode | null
     const getRandomNeighbour = (node: GraphNode): NullableGraphNode => {
         const neighbourIDs = graphData.adjacencyList.get(node.ID)
