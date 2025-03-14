@@ -1,5 +1,6 @@
 import Utils from "./Utils"
 import { Position as DeckPosition } from "deck.gl"
+import { MinPriorityQueue } from "@datastructures-js/priority-queue"
 import {
     GraphData, GraphNode, TemporalPath, TemporalPosition,
     PathfindingParameters, PathfindingResults, PathfindingAlgoType,
@@ -101,6 +102,87 @@ export const breadthFirstSearch: PathfindingAlgoType = (
     return pathfindResult
 }
 
+export const dijkstra: PathfindingAlgoType = (
+    { startNode, endNode, graphData }: PathfindingParameters
+): PathfindingResults => {
+    // Initialize all costs to INFINITY, all predecessors to NULL
+    const allMinCosts = new Map<GraphNode, number>()
+    const predecessors = new Map<GraphNode, (GraphNode | null)>()
+    graphData.allGraphNodes.forEach((node, _) => {
+        allMinCosts.set(node, Infinity)
+        predecessors.set(node, null)
+    })
+
+    // Initialize priority queue + first node (and its start cost to 0)
+    const closedList = new Set<GraphNode>()
+    const openList = new MinPriorityQueue<GraphNode>(node => {
+        return allMinCosts.get(node) || Infinity
+    })
+    allMinCosts.set(startNode, 0)
+    openList.enqueue(startNode)
+
+    // Initialize return results
+    const out = {
+        allTemporalPaths: [], finalPath: null, totalDuration: 0
+    } as PathfindingResults
+
+    let startTime: number = 0
+    while (!openList.isEmpty()) {
+        const currNode = openList.dequeue() as GraphNode
+        closedList.add(currNode)
+
+        if (currNode === endNode) { // Found!
+            out.finalPath = []
+            out.totalDuration = startTime
+            let nodeItr: (GraphNode | null) = currNode
+            while (nodeItr !== null) {
+                out.finalPath.unshift(nodeItr.position)
+                nodeItr = predecessors.get(nodeItr) || null
+            }
+            return out
+        }
+
+        let longestTravelTime: number = 0
+        const allNeighbourIDs = graphData.adjacencyList.get(currNode.ID) as Set<number>
+        for (const neighbourID of allNeighbourIDs) {
+            const neighbourNode = graphData.allGraphNodes.get(neighbourID) as GraphNode
+
+            if (closedList.has(neighbourNode)) { continue }
+
+            const oldCostToNeighbour = allMinCosts.get(neighbourNode) as number
+            const distToNeighbour = Utils.getNodeDistance(currNode, neighbourNode)
+            const computedCostToNeighbour = (
+                allMinCosts.get(currNode) as number + distToNeighbour
+            )
+
+            // Visuals - push "TemporalPath" to return obj 'out'
+            const timeToTravel: number = Utils.distanceToTime(distToNeighbour)
+            longestTravelTime = Math.max(timeToTravel, longestTravelTime)
+            out.allTemporalPaths.push({
+                from: { pos: currNode.position, timeStamp: startTime }, 
+                to: { pos: neighbourNode.position, timeStamp: (startTime + timeToTravel) }
+            })
+
+            // Relax 'cost to neighbour'
+            if (computedCostToNeighbour < oldCostToNeighbour) {
+                allMinCosts.set(neighbourNode, computedCostToNeighbour)
+                predecessors.set(neighbourNode, currNode)
+
+                if (openList.contains(node => node === neighbourNode)) {
+                    const nodeToReinsert = openList.remove(node => node === neighbourNode)[0]  
+                    allMinCosts.set(nodeToReinsert, computedCostToNeighbour)
+                    openList.enqueue(nodeToReinsert)
+                }
+                else {
+                    openList.push(neighbourNode)
+                }
+            }
+        }
+        startTime += longestTravelTime
+    }
+    return out
+}
+
 export const convertDeckPositionsToTemporalPath = (
     positions: DeckPosition[], startTime: number
 ): TemporalPath[] => {
@@ -109,7 +191,7 @@ export const convertDeckPositionsToTemporalPath = (
     let time: number = startTime
     for (let i = 0; i < (positions.length - 1); i++) {
         const distBetweenNodes = Utils.getDeckDistance(positions[i], positions[i + 1])
-        const travelTime = Utils.distanceToTime(distBetweenNodes)
+        const travelTime = Utils.distanceToTime(distBetweenNodes, 0.6)
 
         allTemporalPaths.push({
             from: { pos: positions[i], timeStamp: time },
@@ -120,52 +202,8 @@ export const convertDeckPositionsToTemporalPath = (
     return allTemporalPaths
 }
 
-// export const AStar: PathfindingAlgoType = (
-//     params: PathfindingParameters
-// ): PathfindingResults => {
-
-// }
-
-// export const depthFirstSearch: PathfindingAlgoType = (
-//     params: PathfindingParameters
-// ): PathfindingResults => {
-//     return dfsHelper(params)
-// }
-
-// const dfsHelper = (
-//     params: PathfindingParameters, visitedIDs = new Set<number>(),
-//     results = new PathfindingResults([], []), startTime: number = 0, depth = 0
-// ): PathfindingResults => {
-
-//     console.log("Depth: ", depth)
-//     visitedIDs.add(params.startNode.ID)
-
-//     // Base case
-//     const allNeighbourIDs = params.graphData.adjacencyList.get(params.startNode.ID)
-//     allNeighbourIDs?.forEach((idOfNeighbour: number) => {
-//         const neighbourNode = params.graphData.allGraphNodes.get(idOfNeighbour) as GraphNode
-//         const distToNeighbour = Utils.getNodeDistance(params.startNode, neighbourNode)
-//         const timeToNeighbour = Utils.distanceToTime(distToNeighbour)
-
-//         results.allTemporalPaths.push({
-//             from: { pos: params.startNode.position, timeStamp: startTime },
-//             to: { pos: params.endNode.position, timeStamp: (startTime + timeToNeighbour) }
-//         })
-
-//         if (idOfNeighbour === params.endNode.ID) { return results } // Found!
-
-//         const paramsWithNewStartNode = {
-//             ...params,
-//             startNode: params.graphData.allGraphNodes.get(idOfNeighbour)
-//         } as PathfindingParameters
-//         return dfsHelper(
-//             paramsWithNewStartNode, visitedIDs, results, (startTime + timeToNeighbour), depth + 1
-//         )
-//     })
-//     return results
-// }
-
-export const getRandomTrip = (graphData: GraphData): TemporalPath[] => {
+// For debugging
+export const getRandomTrip = (graphData: GraphData): TemporalPath[] => { 
     type NullableGraphNode = GraphNode | null
     const getRandomNeighbour = (node: GraphNode): NullableGraphNode => {
         const neighbourIDs = graphData.adjacencyList.get(node.ID)

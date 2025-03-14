@@ -3,10 +3,11 @@ import OverlayGUI from './components/OverlayGUI'
 import roadData from './assets/roadData.json'
 import React, { useEffect, useRef, useState } from 'react'
 import {
-   breadthFirstSearch, buildGraph, convertDeckPositionsToTemporalPath
+   breadthFirstSearch, buildGraph, convertDeckPositionsToTemporalPath,
+   dijkstra
 } from './typescript/Algorithms'
 import {
-   GraphData, GraphNode, PathfindingAlgoType, PathfindingResults, StartEndPoint, TemporalPath
+   GraphData, GraphNode, PATHFINDING_ALGO, PathfindingAlgoType, PathfindingResults, StartEndPoint, TemporalPath
 } from './typescript/Declarations';
 import DeckGL, {
    PickingInfo, Position as DeckPosition,
@@ -14,7 +15,7 @@ import DeckGL, {
 } from 'deck.gl'
 
 const App: React.FC = () => {
-   const m_pathfinder = useRef<PathfindingAlgoType>(breadthFirstSearch)
+   const m_pathfinder = useRef<PathfindingAlgoType>(dijkstra)
 
    const m_graphData = useRef<GraphData>(new GraphData())
    const m_startNode = useRef<GraphNode | null>(null)
@@ -57,7 +58,7 @@ const App: React.FC = () => {
       getTimestamps: d => [d.from.timeStamp, d.to.timeStamp],
       getWidth: 2.5, pickable: true, capRounded: true,
       currentTime: m_timeElapsed, trailLength: Infinity,
-      getColor: [255, 200, 0, 130]
+      getColor: [255, 200, 0, 190]
    });
 
    const MAX_TIME_DIFF_MS = 1200
@@ -136,7 +137,7 @@ const App: React.FC = () => {
          endNode: m_endNode.current,
          graphData: m_graphData.current
       })
-      console.log("Pathfinding Results: ", results)
+      // console.log("Pathfinding Results: ", results)
       if (results.finalPath === null) { return }
 
       setTrips(results.allTemporalPaths)
@@ -145,7 +146,6 @@ const App: React.FC = () => {
          results.finalPath, results.totalDuration
       )
       setFinalPath(finalTemporalPath)
-
       setTimeElapsed(0)
    }
 
@@ -166,7 +166,22 @@ const App: React.FC = () => {
                   mapClickHandler([x, y], m_isPickingStart)
                }}
             />
-            <OverlayGUI runClickHandler={runClickHandler} />
+            <OverlayGUI
+               runClickHandler={runClickHandler}
+               algoSetter={algo => {
+                  switch (algo) {
+                     case PATHFINDING_ALGO.BFS:
+                        m_pathfinder.current = breadthFirstSearch
+                        break
+                     case PATHFINDING_ALGO.DIJKSTRA:
+                        m_pathfinder.current = dijkstra 
+                        break
+                     default: 
+                        m_pathfinder.current = breadthFirstSearch
+                        break
+                  }
+               }}
+            />
          </div>
       </div>
    )
