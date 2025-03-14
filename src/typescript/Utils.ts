@@ -25,7 +25,9 @@ const Utils = {
         const dy: number = a[1] - b[1]
         return Math.sqrt(dx * dx + dy * dy)
     },
-    distanceToTime(dist: number): number { return dist / 0.000008 },
+    distanceToTime(dist: number, speedMultiplier: number = 1): number { 
+        return (dist / 0.000008) / speedMultiplier
+    },
     // distanceToTime(dist: number): number { return 1 },
 }
 
