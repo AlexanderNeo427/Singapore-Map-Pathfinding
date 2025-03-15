@@ -258,6 +258,64 @@ export const AStar: PathfindingAlgoType = (
     return out
 }
 
+export const depthFirstSearch: PathfindingAlgoType = (
+    { startNode, endNode, graphData }: PathfindingParameters
+): PathfindingResults => {
+
+    if (graphData.allGraphNodes.size === 0) {
+        return {} as PathfindingResults
+    }
+    const allGraphNodes: Map<number, GraphNode> = graphData.allGraphNodes
+    const adjacencyList: Map<number, Set<number>> = graphData.adjacencyList
+
+    const pathfindResult = {
+        allTemporalPaths: [], finalPath: [], totalDuration: 0
+    } as PathfindingResults
+    
+    const visitedNodes = new Set<GraphNode>()
+    const stackOfPaths = new Array<Array<GraphNode>>()
+    stackOfPaths.push([startNode])
+    let startTime: number = 0
+
+    while (stackOfPaths.length > 0) {
+        const pathSoFar = stackOfPaths.pop() as GraphNode[]
+        const nodeToProcess = pathSoFar[pathSoFar.length - 1] as GraphNode
+
+        if (!visitedNodes.has(nodeToProcess)) {
+            visitedNodes.add(nodeToProcess)
+
+            let longestTravelTime: number = 0
+            const neighbourIDs = adjacencyList.get(nodeToProcess.ID) as Set<number>
+            
+            for (const idOfNeighbour of neighbourIDs) {
+                const neighbourNode = allGraphNodes.get(idOfNeighbour) as GraphNode
+                if (!visitedNodes.has(neighbourNode)) {
+                    stackOfPaths.push([...pathSoFar, neighbourNode])
+
+                    const distToNeighbour = Utils.getNodeDistance(nodeToProcess, neighbourNode)
+                    const timeSeconds: number = Utils.distanceToTime(distToNeighbour)
+                    const endTime: number = startTime + timeSeconds
+                    longestTravelTime = Math.max(longestTravelTime, timeSeconds)
+
+                    pathfindResult.allTemporalPaths.push({
+                        from: { pos: nodeToProcess.position, timeStamp: startTime },
+                        to: { pos: neighbourNode.position, timeStamp: endTime },
+                    })
+
+                    if (neighbourNode === endNode) {
+                        pathSoFar.push(neighbourNode)
+                        pathfindResult.finalPath = pathSoFar.map(node => node.position)
+                        pathfindResult.totalDuration = (startTime + longestTravelTime)
+                        return pathfindResult
+                    }
+                }
+            }
+            startTime += longestTravelTime
+        }
+    }
+    return pathfindResult
+}
+
 export const convertDeckPositionsToTemporalPath = (
     positions: DeckPosition[], startTime: number
 ): TemporalPath[] => {

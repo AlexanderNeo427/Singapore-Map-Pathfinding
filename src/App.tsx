@@ -3,12 +3,12 @@ import OverlayGUI from './components/OverlayGUI'
 import roadData from './assets/roadData.json'
 import React, { useEffect, useRef, useState } from 'react'
 import {
-   AStar,
-   breadthFirstSearch, buildGraph, convertDeckPositionsToTemporalPath,
-   dijkstra
+   AStar, breadthFirstSearch, buildGraph,
+   convertDeckPositionsToTemporalPath, depthFirstSearch, dijkstra
 } from './typescript/Algorithms'
 import {
-   GraphData, GraphNode, PATHFINDING_ALGO, PathfindingAlgoType, PathfindingResults, StartEndPoint, TemporalPath
+   GraphData, GraphNode, PATHFINDING_ALGO, PathfindingAlgoType,
+   PathfindingResults, StartEndPoint, TemporalPath
 } from './typescript/Declarations';
 import DeckGL, {
    PickingInfo, Position as DeckPosition,
@@ -54,12 +54,10 @@ const App: React.FC = () => {
    }, [])
 
    const pathfindingLayer = new TripsLayer<TemporalPath>({
-      id: 'Pathfinding Layer', data: m_trips,
-      getPath: d => [d.from.pos, d.to.pos],
+      id: 'Pathfinding Layer', data: m_trips, getPath: d => [d.from.pos, d.to.pos],
       getTimestamps: d => [d.from.timeStamp, d.to.timeStamp],
-      getWidth: 2.5, pickable: true, capRounded: true,
-      currentTime: m_timeElapsed, trailLength: Infinity,
-      getColor: [255, 200, 0, 190]
+      getWidth: 2.8, pickable: true, capRounded: true, currentTime: m_timeElapsed,
+      trailLength: Infinity, getColor: [255, 200, 0, 210],
    });
 
    const MAX_TIME_DIFF_MS = 900
@@ -67,14 +65,14 @@ const App: React.FC = () => {
       id: 'Pathfinding Glow Layer', data: m_trips,
       getPath: d => [d.from.pos, d.to.pos],
       getTimestamps: d => [d.from.timeStamp, d.to.timeStamp],
-      getWidth: 5, pickable: true, capRounded: true,
-      currentTime: m_timeElapsed, trailLength: MAX_TIME_DIFF_MS,
-      getColor: [0, 200, 255]
+      getWidth: 6, pickable: true, capRounded: true, currentTime: m_timeElapsed,
+      trailLength: MAX_TIME_DIFF_MS, getColor: [0, 200, 255, 150] // Include alpha value
    });
 
    const roadLayer = new GeoJsonLayer({
       id: 'Road Layer', data: (roadData as FeatureCollection),
       filled: true, stroked: false, opacity: 0.9, lineWidthMinPixels: 5,
+      getLineWidth: 6,
       getLineColor: [70, 70, 70],
    })
 
@@ -100,8 +98,7 @@ const App: React.FC = () => {
    })
 
    const finalPathLayer = new TripsLayer<TemporalPath>({
-      id: 'Final Path Layer', data: m_finalPath,
-      getPath: d => [d.from.pos, d.to.pos],
+      id: 'Final Path Layer', data: m_finalPath, getPath: d => [d.from.pos, d.to.pos],
       getTimestamps: d => [d.from.timeStamp, d.to.timeStamp],
       getWidth: 3.8, pickable: true, capRounded: true,
       getColor: [170, 0, 255], currentTime: m_timeElapsed, trailLength: Infinity,
@@ -179,6 +176,9 @@ const App: React.FC = () => {
                         break
                      case PATHFINDING_ALGO.AStar:
                         m_pathfinder.current = AStar
+                        break
+                     case PATHFINDING_ALGO.DFS:
+                        m_pathfinder.current = depthFirstSearch 
                         break
                      default:
                         m_pathfinder.current = breadthFirstSearch
