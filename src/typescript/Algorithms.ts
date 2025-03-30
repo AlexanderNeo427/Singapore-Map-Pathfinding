@@ -324,7 +324,7 @@ export const convertDeckPositionsToTemporalPath = (
     let time: number = startTime
     for (let i = 0; i < (positions.length - 1); i++) {
         const distBetweenNodes = Utils.getDeckDistance(positions[i], positions[i + 1])
-        const travelTime = Utils.distanceToTime(distBetweenNodes, 0.6)
+        const travelTime = Utils.distanceToTime(distBetweenNodes, 0.2) // Lower multipler to slow down
 
         allTemporalPaths.push({
             from: { pos: positions[i], timeStamp: time },

@@ -29,6 +29,14 @@ const Utils = {
         return (dist / 0.00003) / speedMultiplier
         // return 1
     },
+    lerp(start: number, end: number, t: number, clamp: boolean = true): number {
+        const value = start + (end - start) * t;
+        return clamp 
+            ? start < end 
+                ? Math.max(start, Math.min(end, value))
+                : Math.max(end, Math.min(start, value))
+            : value;
+    }
 }
 
 export default Utils
