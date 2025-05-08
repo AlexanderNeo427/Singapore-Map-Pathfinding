@@ -14,11 +14,9 @@ import {
 } from 'geojson'
 
 const GraphHelpers = {
-    /**
-     * =====================================================
-     * ========= ======= BUILD GRAPH =======================
-     * =====================================================
-     */
+    // =====================================================
+    // ================= BUILD GRAPH =======================
+    // =====================================================
     buildGraph: (allFeatures: FeatureCollection): GraphData => {
         const allGraphNodes = new Map<number, GraphNode>()
         const adjacencyList = new Map<number, Set<number>>()
@@ -70,11 +68,9 @@ const GraphHelpers = {
         })
         return { allGraphNodes: allGraphNodes, adjacencyList: adjacencyList }
     },
-    /**
-     * ==============================================================
-     * ========= CONVERT DECK POSITIONS TO TEMPORAL PATH ============
-     * ==============================================================
-     */
+    // ==============================================================
+    // ========= CONVERT DECK POSITIONS TO TEMPORAL PATH ============
+    // ==============================================================
     convertDeckPositionsToTemporalPath: (
         positions: DeckPosition[],
         startTime: number
@@ -97,11 +93,9 @@ const GraphHelpers = {
         }
         return allTemporalPaths
     },
-    /**
-     * =====================================================
-     * ================ GET RANDOM TRIP ====================
-     * =====================================================
-     */
+    // =====================================================
+    // ================ GET RANDOM TRIP ====================
+    // =====================================================
     getRandomTrip: (graphData: GraphData): TemporalLine[] => {
         type NullableGraphNode = GraphNode | null
         const getRandomNeighbour = (node: GraphNode): NullableGraphNode => {

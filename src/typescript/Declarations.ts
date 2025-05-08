@@ -1,6 +1,6 @@
 import { Position as DeckPosition } from 'deck.gl'
 
-export enum PATHFINDING_ALGO {
+export enum PATHFINDER_TYPE {
     BFS,
     DFS,
     AStar,
@@ -8,7 +8,7 @@ export enum PATHFINDING_ALGO {
     BELLMAN_FORD,
 }
 
-export type PathfindingAlgoType = (
+export type Pathfinder = (
     params: PathfindingParameters
 ) => PathfindingResults
 
@@ -43,4 +43,10 @@ export type PathfindingResults = {
     allTemporalPaths: TemporalLine[]
     finalPath: DeckPosition[] | null
     totalDuration: number
+}
+
+export type RenderingData = {
+    trips: TemporalLine[]
+    finalPath: TemporalLine[]
+    timeElapsed: number
 }
