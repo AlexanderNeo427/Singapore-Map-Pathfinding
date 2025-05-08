@@ -1,4 +1,4 @@
-import { Position as DeckPosition } from "deck.gl"
+import { Position as DeckPosition } from 'deck.gl'
 
 export enum PATHFINDING_ALGO {
     BFS,
@@ -8,13 +8,15 @@ export enum PATHFINDING_ALGO {
     BELLMAN_FORD,
 }
 
-export type PathfindingAlgoType = (params: PathfindingParameters) => PathfindingResults
+export type PathfindingAlgoType = (
+    params: PathfindingParameters
+) => PathfindingResults
 
-export type TemporalPosition = { pos: DeckPosition, timeStamp: number }
+export type TemporalPosition = { pos: DeckPosition; timeStamp: number }
 
-export type TemporalPath = { from: TemporalPosition, to: TemporalPosition }
+export type TemporalLine = { from: TemporalPosition; to: TemporalPosition }
 
-export type StartEndPoint = { node: GraphNode, isStart: boolean }
+export type StartEndPoint = { node: GraphNode; isStart: boolean }
 
 export class GraphNode {
     public readonly ID: number
@@ -38,7 +40,7 @@ export type PathfindingParameters = {
 }
 
 export type PathfindingResults = {
-    allTemporalPaths: TemporalPath[]
+    allTemporalPaths: TemporalLine[]
     finalPath: DeckPosition[] | null
     totalDuration: number
 }
