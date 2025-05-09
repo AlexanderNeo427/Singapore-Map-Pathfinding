@@ -68,6 +68,60 @@ const GraphHelpers = {
         })
         return { allGraphNodes: allGraphNodes, adjacencyList: adjacencyList }
     },
+    // =====================================================
+    // ================= BUILD GRAPH =======================
+    // =====================================================
+    geoJsonToInternal: (allFeatures: FeatureCollection): GraphData => {
+        const allGraphNodes = new Map<number, GraphNode>()
+        const adjacencyList = new Map<number, Set<number>>()
+
+        allFeatures.features.forEach((feature: Feature) => {
+            if (feature.geometry.type !== 'LineString') {
+                return
+            }
+
+            const allWayCoords: GeoPosition[] = (feature.geometry as LineString)
+                .coordinates
+            for (let i = 0; i < allWayCoords.length - 1; i++) {
+                // Lazily instantiate new graph node for 'currNodeID'
+                // (assuming it doesn't exist yet)
+                const currNodeID: number = Utils.getGeoPosHash(allWayCoords[i])
+                if (!allGraphNodes.has(currNodeID)) {
+                    const newCoords: DeckPosition = Utils.geoToDeckPos(
+                        allWayCoords[i]
+                    )
+                    allGraphNodes.set(
+                        currNodeID,
+                        new GraphNode(currNodeID, newCoords)
+                    )
+
+                    // Init 'neighbour IDs' set for 'currNodeID'
+                    adjacencyList.set(currNodeID, new Set())
+                }
+
+                // Lazily instantiate new graph node for 'otherNodeID'
+                // (assuming it doesn't exist yet)
+                const otherNodeID: number = Utils.getGeoPosHash(allWayCoords[i + 1])
+                if (!allGraphNodes.has(otherNodeID)) {
+                    const otherCoords: DeckPosition = Utils.geoToDeckPos(
+                        allWayCoords[i + 1]
+                    )
+                    allGraphNodes.set(
+                        otherNodeID,
+                        new GraphNode(otherNodeID, otherCoords)
+                    )
+
+                    // Init 'neighbour IDs' set for 'otherNodeID'
+                    adjacencyList.set(otherNodeID, new Set())
+                }
+
+                // Bi-directional ways
+                adjacencyList.get(currNodeID)?.add(otherNodeID)
+                adjacencyList.get(otherNodeID)?.add(currNodeID)
+            }
+        })
+        return { allGraphNodes: allGraphNodes, adjacencyList: adjacencyList }
+    },
     // ==============================================================
     // ========= CONVERT DECK POSITIONS TO TEMPORAL PATH ============
     // ==============================================================

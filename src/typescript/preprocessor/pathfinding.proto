@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package Pathfinding;
+
+message Node {
+    string id = 1;
+    string x = 2;
+    string y = 3;
+}
+
+// message Edge {
+//     string from_id = 1;
+//     string to_id = 2;
+// }
+
+message Graph {
+    repeated Node nodes = 1;
+    // repeated Edge edges = 2;
+}
