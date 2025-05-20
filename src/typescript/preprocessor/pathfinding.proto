@@ -8,12 +8,16 @@ message Node {
     string y = 3;
 }
 
-// message Edge {
-//     string from_id = 1;
-//     string to_id = 2;
-// }
+message Node2 {
+    string fromID = 1;
+}
+
+message Edge {
+    string fromID = 1;
+    string toID = 2;
+}
 
 message Graph {
     repeated Node nodes = 1;
-    // repeated Edge edges = 2;
+    repeated Edge edges = 2;
 }
