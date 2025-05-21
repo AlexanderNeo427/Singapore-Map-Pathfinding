@@ -12,7 +12,9 @@ const App: React.FC = () => {
       <div className="flex flex-col items-center w-full h-full">
         <MapRenderer ref={mapRendererRef} pathfinderType={pathfinderType} />
         <OverlayGUI
-          runClickHandler={() => mapRendererRef.current?.runPathfinding()}
+          runClickHandler={(): void => {
+            mapRendererRef.current?.runPathfinding()
+          }}
           algoSetter={setPathfinderType}
         />
       </div>

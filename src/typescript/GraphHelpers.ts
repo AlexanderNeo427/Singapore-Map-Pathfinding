@@ -46,7 +46,6 @@ const GraphHelpers = {
             throw new Error()
         }
 
-        console.log("No errors with fetching")
         const arrayBuffer = await response.arrayBuffer()
         const uint8Array = new Uint8Array(arrayBuffer)
         const deserializedGraph = graphType.decode(uint8Array) as unknown as PbGraph

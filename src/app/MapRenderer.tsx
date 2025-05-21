@@ -1,47 +1,43 @@
-import singaporeBuildings from '../assets/buildingData.json' // Smaller test data
+// import singaporeBuildings from '../assets/buildingData.json' // Smaller test data
 // import singaporeBuildings from './assets/sg_building_with_heights.json'
 
-import singaporeRoads from '../assets/roadData.json' // Smaller test data
+// import singaporeRoads from '../assets/roadData.json' // Smaller test data
 // import singaporeRoads from './assets/singapore_roads.json'
 
-import binGraphDataURL from '../assets/graph_data.bin'
-
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import Pathfinders from '../typescript/PathfindingAlgorithms'
 import useTimeElapsedManager from '../hooks/useTimeElapsed'
-import GraphHelpers from '../typescript/GraphHelpers'
 import { Map as Basemap } from '@vis.gl/react-maplibre'
-import { FeatureCollection } from 'geojson'
+import binGraphDataURL from '../assets/graph_data.bin'
+import GraphHelpers from '../typescript/GraphHelpers'
+import { SG_BOUNDS } from '../typescript/Globals'
+import DeckGL, {
+  ScatterplotLayer,
+  MapController,
+  MapViewState,
+  PickingInfo,
+  TripsLayer,
+} from 'deck.gl'
+import Utils from '../typescript/Utils'
 import {
-  PATHFINDER_TYPE,
   PathfindingResults,
+  PATHFINDER_TYPE,
   StartEndPoint,
   TemporalLine,
   Pathfinder,
   GraphNode,
   GraphData,
 } from '../typescript/Declarations'
-import DeckGL, {
-  ScatterplotLayer,
-  MapController,
-  GeoJsonLayer,
-  PickingInfo,
-  TripsLayer,
-  MapViewState,
-  WebMercatorViewport,
-} from 'deck.gl'
-import Utils from '../typescript/Utils'
-import { SG_BOUNDS } from '../typescript/Globals'
 
 export interface MapRendererRef {
-  runPathfinding: () => void
+  runPathfinding: () => Promise<void>
 }
 
 interface MapRendererProps {
   pathfinderType: PATHFINDER_TYPE
 }
 
-const PathfindingAlgoMap = new Map<PATHFINDER_TYPE, Pathfinder>([
+export const PathfindingAlgoMap = new Map<PATHFINDER_TYPE, Pathfinder>([
   [PATHFINDER_TYPE.BFS, Pathfinders.breadthFirstSearch],
   [PATHFINDER_TYPE.DFS, Pathfinders.depthFirstSearch],
   [PATHFINDER_TYPE.DIJKSTRA, Pathfinders.dijkstra],
@@ -65,7 +61,7 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
     runPathfinding: () => runPathfindingAlgo()
   }))
 
-  const runPathfindingAlgo = (): void => {
+  const runPathfindingAlgo = async (): Promise<void> => {
     const pathfinder = PathfindingAlgoMap.get(props.pathfinderType)
     if (!pathfinder || pathfinder === undefined || pathfinder === null) {
       return
@@ -75,7 +71,7 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
       return
     }
 
-    const results: PathfindingResults = pathfinder({
+    const results: PathfindingResults = await pathfinder({
       startNode: startNode,
       endNode: endNode,
       graphData: graphData,
@@ -96,8 +92,8 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
   }
 
   const handleViewStateChange = (viewState: MapViewState): void => {
-    console.log("lat: ", viewState.latitude)
-    console.log("lng: ", viewState.longitude)
+    // console.log("lat: ", viewState.latitude)
+    // console.log("lng: ", viewState.longitude)
     viewState.minZoom = 12
     viewState.maxZoom = 16
 
@@ -120,7 +116,6 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
       setGraphData(graphData)
     }
     initializeGraphData()
-    // setGraphData(GraphHelpers.buildGraph(singaporeRoads as FeatureCollection))
     // setBuildingsWithLevels(_ => {
     //   return (singaporeBuildings as FeatureCollection).features.filter(
     //     feature => {
@@ -270,7 +265,6 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
   const mapClickHandler = (
     clickCoord: [number, number],
     isPickingStart: boolean,
-
   ): void => {
     let nodeClosestToClick: GraphNode | null = null
     let minDist: number = 9999999
@@ -288,7 +282,7 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
     if (!nodeClosestToClick || nodeClosestToClick === null) {
       return
     }
-    if (minDist > 0.0004) {
+    if (minDist > 0.0003) {
       return
     } // Tolerance
 

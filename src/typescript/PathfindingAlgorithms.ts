@@ -7,11 +7,13 @@ import {
     GraphNode,
 } from './Declarations'
 
-export const lePathfinder = ({
+const BATCH_SIZE = 300
+
+export const lePathfinder = async ({
     startNode,
     endNode,
     graphData,
-}: PathfindingParameters): PathfindingResults => {
+}: PathfindingParameters): Promise<PathfindingResults> => {
     if (graphData.allGraphNodes.size === 0) {
         return {} as PathfindingResults
     }
@@ -65,20 +67,16 @@ export const lePathfinder = ({
                     to: { pos: neighbourNode.position, timeStamp: endTime },
                 })
 
-                if (neighbourNode === endNode) {
-                    // Found!
+                if (neighbourNode === endNode) { // Found!
                     pathSoFar.push(neighbourNode)
-                    pathfindResult.finalPath = pathSoFar.map(
-                        node => node.position
-                    )
-
-                    pathfindResult.totalDuration =
-                        startTime + longestTravelTime
+                    pathfindResult.finalPath = pathSoFar.map(node => node.position)
+                    pathfindResult.totalDuration = startTime + longestTravelTime
                     return pathfindResult
                 }
             }
         }
         startTime += longestTravelTime
+        await new Promise(resolve => setTimeout(resolve, 0))
     }
     return pathfindResult
 }
@@ -89,11 +87,13 @@ const Pathfinders: Record<string, Pathfinder> = {
      * ========= === BREADTH FIRST SEARCH ===================
      * ======================================================
      */
-    breadthFirstSearch: ({
+    breadthFirstSearch: async ({
         startNode,
         endNode,
         graphData,
-    }: PathfindingParameters): PathfindingResults => {
+    }: PathfindingParameters): Promise<PathfindingResults> => {
+        let batchSizeProcessed = 0
+
         if (graphData.allGraphNodes.size === 0) {
             return {} as PathfindingResults
         }
@@ -161,6 +161,11 @@ const Pathfinders: Record<string, Pathfinder> = {
                 }
             }
             startTime += longestTravelTime
+
+            if (++batchSizeProcessed > BATCH_SIZE) {
+                batchSizeProcessed = 0
+                await new Promise(resolve => setTimeout(resolve, 0))
+            }
         }
         return pathfindResult
     },
@@ -169,11 +174,13 @@ const Pathfinders: Record<string, Pathfinder> = {
      * ========= ======= DIJKSTRA =====================
      * ================================================
      */
-    dijkstra: ({
+    dijkstra: async ({
         startNode,
         endNode,
         graphData,
-    }: PathfindingParameters): PathfindingResults => {
+    }: PathfindingParameters): Promise<PathfindingResults> => {
+        let batchSizeProcessed = 0
+
         // Initialize all costs to INFINITY, all predecessors to NULL
         const allMinCosts = new Map<GraphNode, number>()
         const predecessors = new Map<GraphNode, GraphNode | null>()
@@ -259,6 +266,11 @@ const Pathfinders: Record<string, Pathfinder> = {
                 }
             }
             startTime += longestTravelTime
+
+            if (++batchSizeProcessed > BATCH_SIZE) {
+                batchSizeProcessed = 0
+                await new Promise(resolve => setTimeout(resolve, 0))
+            }
         }
         return out
     },
@@ -267,11 +279,13 @@ const Pathfinders: Record<string, Pathfinder> = {
      * ========= ======= A-STAR =====================
      * ==============================================
      */
-    AStar: ({
+    AStar: async ({
         startNode,
         endNode,
         graphData,
-    }: PathfindingParameters): PathfindingResults => {
+    }: PathfindingParameters): Promise<PathfindingResults> => {
+        let batchSizeProcessed = 0
+
         // Initialize data needed for pathfinding
         const predecessors = new Map<GraphNode, GraphNode | null>()
         const gCosts = new Map<GraphNode, number>()
@@ -362,6 +376,11 @@ const Pathfinders: Record<string, Pathfinder> = {
                 }
             }
             startTime += maxTravelTime
+
+            if (++batchSizeProcessed > BATCH_SIZE) {
+                batchSizeProcessed = 0
+                await new Promise(resolve => setTimeout(resolve, 0))
+            }
         }
         return out
     },
@@ -370,11 +389,13 @@ const Pathfinders: Record<string, Pathfinder> = {
      * ============== DEPTH-FIRST SEARCH =================
      * ===================================================
      */
-    depthFirstSearch: ({
+    depthFirstSearch: async ({
         startNode,
         endNode,
         graphData,
-    }: PathfindingParameters): PathfindingResults => {
+    }: PathfindingParameters): Promise<PathfindingResults> => {
+        let batchSizeProcessed = 0
+
         if (graphData.allGraphNodes.size === 0) {
             return {} as PathfindingResults
         }
@@ -439,13 +460,17 @@ const Pathfinders: Record<string, Pathfinder> = {
                             pathfindResult.finalPath = pathSoFar.map(
                                 node => node.position
                             )
-                            pathfindResult.totalDuration =
-                                startTime + longestTravelTime
+                            pathfindResult.totalDuration = startTime + longestTravelTime
                             return pathfindResult
                         }
                     }
                 }
                 startTime += longestTravelTime
+
+                if (++batchSizeProcessed > BATCH_SIZE) {
+                    batchSizeProcessed = 0
+                    await new Promise(resolve => setTimeout(resolve, 0))
+                }
             }
         }
         return pathfindResult

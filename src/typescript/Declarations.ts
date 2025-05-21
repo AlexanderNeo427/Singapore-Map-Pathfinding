@@ -10,7 +10,7 @@ export enum PATHFINDER_TYPE {
 
 export type Pathfinder = (
     params: PathfindingParameters
-) => PathfindingResults
+) => Promise<PathfindingResults>
 
 export type TemporalPosition = { pos: DeckPosition; timeStamp: number }
 

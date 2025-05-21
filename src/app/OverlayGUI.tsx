@@ -87,7 +87,7 @@ const OverlayGUI: React.FC<OverlayProps> = (props) => {
               max="2"
               step="0.1"
               value={animationSpeed}
-              onChange={(e) =>
+              onChange={e =>
                 setAnimationSpeed(parseFloat(e.target.value))
               }
               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
