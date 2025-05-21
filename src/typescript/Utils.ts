@@ -10,6 +10,9 @@ const Utils = {
         }
         return hash
     },
+    getGeoPosStr(geoCoord: GeoPosition): string {
+        return `${geoCoord[0]},${geoCoord[1]}`
+    },
     getGeoPosHash(geoCoord: GeoPosition): number {
         return this.hashCode(`${geoCoord[0]}, ${geoCoord[1]}`)
     },

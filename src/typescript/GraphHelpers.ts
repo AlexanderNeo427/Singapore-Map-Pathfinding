@@ -74,6 +74,9 @@ const GraphHelpers = {
     // ================= BUILD GRAPH =======================
     // =====================================================
     buildGraph: (allFeatures: FeatureCollection): GraphData => {
+        let nextAvailableID = -1000000000
+        const nodeIdMap = new Map<string, number>()
+
         const allGraphNodes = new Map<number, GraphNode>()
         const adjacencyList = new Map<number, Set<number>>()
 
@@ -82,28 +85,36 @@ const GraphHelpers = {
                 return
             }
 
-            const allWayCoords: GeoPosition[] = (feature.geometry as LineString)
-                .coordinates
+            const allWayCoords = (feature.geometry as LineString).coordinates
             for (let i = 0; i < allWayCoords.length - 1; i++) {
                 // Lazily instantiate new graph node for 'currNodeID'
                 // (assuming it doesn't exist yet)
-                const currNodeID: number = Utils.getGeoPosHash(allWayCoords[i])
-                if (!allGraphNodes.has(currNodeID)) {
+                const geoPosStr = Utils.getGeoPosStr(allWayCoords[i])
+                if (!nodeIdMap.has(geoPosStr)) {
+                    nodeIdMap.set(geoPosStr, nextAvailableID++)
+                }
+                const nodeID = nodeIdMap.get(geoPosStr) as number
+
+                if (!allGraphNodes.has(nodeID)) {
                     const newCoords: DeckPosition = Utils.geoToDeckPos(
                         allWayCoords[i]
                     )
                     allGraphNodes.set(
-                        currNodeID,
-                        new GraphNode(currNodeID, newCoords)
+                        nodeID,
+                        new GraphNode(nodeID, newCoords)
                     )
 
                     // Init 'neighbour IDs' set for 'currNodeID'
-                    adjacencyList.set(currNodeID, new Set())
+                    adjacencyList.set(nodeID, new Set())
                 }
 
                 // Lazily instantiate new graph node for 'otherNodeID'
                 // (assuming it doesn't exist yet)
-                const otherNodeID: number = Utils.getGeoPosHash(allWayCoords[i + 1])
+                const otherGeoPosStr = Utils.getGeoPosStr(allWayCoords[i + 1])
+                if (!nodeIdMap.has(otherGeoPosStr)) {
+                    nodeIdMap.set(otherGeoPosStr, nextAvailableID++)
+                }
+                const otherNodeID = nodeIdMap.get(otherGeoPosStr) as number
                 if (!allGraphNodes.has(otherNodeID)) {
                     const otherCoords: DeckPosition = Utils.geoToDeckPos(
                         allWayCoords[i + 1]
@@ -118,8 +129,8 @@ const GraphHelpers = {
                 }
 
                 // Bi-directional ways
-                adjacencyList.get(currNodeID)?.add(otherNodeID)
-                adjacencyList.get(otherNodeID)?.add(currNodeID)
+                adjacencyList.get(nodeID)?.add(otherNodeID)
+                adjacencyList.get(otherNodeID)?.add(nodeID)
             }
         })
         return { allGraphNodes: allGraphNodes, adjacencyList: adjacencyList }

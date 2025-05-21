@@ -2,9 +2,9 @@
 // import singaporeBuildings from './assets/sg_building_with_heights.json'
 
 // import singaporeRoads from '../assets/roadData.json' // Smaller test data
-// import singaporeRoads from './assets/singapore_roads.json'
+import singaporeRoads from '../assets/singapore_roads.json'
 
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import Pathfinders from '../typescript/PathfindingAlgorithms'
 import useTimeElapsedManager from '../hooks/useTimeElapsed'
 import { Map as Basemap } from '@vis.gl/react-maplibre'
@@ -28,6 +28,7 @@ import {
   GraphNode,
   GraphData,
 } from '../typescript/Declarations'
+import { FeatureCollection } from 'geojson'
 
 export interface MapRendererRef {
   runPathfinding: () => Promise<void>
@@ -112,7 +113,8 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
 
   useEffect(() => {
     const initializeGraphData = async (): Promise<void> => {
-      const graphData = await GraphHelpers.buildGraphFromBinary(binGraphDataURL)
+      // const graphData = await GraphHelpers.buildGraphFromBinary(binGraphDataURL)
+      const graphData = await GraphHelpers.buildGraph(singaporeRoads as FeatureCollection)
       setGraphData(graphData)
     }
     initializeGraphData()
