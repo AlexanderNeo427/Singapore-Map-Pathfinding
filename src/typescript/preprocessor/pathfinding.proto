@@ -8,10 +8,6 @@ message Node {
     string y = 3;
 }
 
-message Node2 {
-    string fromID = 1;
-}
-
 message Edge {
     string fromID = 1;
     string toID = 2;

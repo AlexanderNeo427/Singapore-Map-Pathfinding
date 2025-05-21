@@ -1,24 +1,19 @@
 import singaporeRoadData from '../../assets/roadData.json'
+import { PROTOBUF_PARAMS } from '../Globals'
 import { FeatureCollection } from 'geojson'
 import GraphHelpers from '../GraphHelpers'
 import protobuf from 'protobufjs'
 import path from 'path'
 import fs from 'fs'
 
-const PROTO_NAME = "pathfinding.proto"
-const NODE_TYPE = "Pathfinding.Node"
-const EDGE_TYPE = "Pathfinding.Edge"
-const GRAPH_TYPE = "Pathfinding.Graph"
-const OUTPUT_NAME = "graph_data.bin"
-
 const preprocess = async (geoJson: FeatureCollection): Promise<void> => {
     const graphData = GraphHelpers.buildGraph(geoJson)
-    const protoPath = path.resolve(__dirname, PROTO_NAME)
+    const protoPath = path.resolve(__dirname, PROTOBUF_PARAMS.NAME)
 
     const root = await protobuf.load(protoPath)
-    const nodeType = root.lookupType(NODE_TYPE)
-    const edgeType = root.lookupType(EDGE_TYPE)
-    const graphType = root.lookupType(GRAPH_TYPE)
+    const nodeType = root.lookupType(PROTOBUF_PARAMS.NODE_TYPE)
+    const edgeType = root.lookupType(PROTOBUF_PARAMS.EDGE_TYPE)
+    const graphType = root.lookupType(PROTOBUF_PARAMS.GRAPH_TYPE)
 
     const pbNodes = Array.from(graphData.allGraphNodes).map(([id, node]) => {
         const payload = {
@@ -52,7 +47,7 @@ const preprocess = async (geoJson: FeatureCollection): Promise<void> => {
     })
 
     const binaryData = graphType.encode(pbGraph).finish()
-    const outputPath = path.resolve(__dirname, OUTPUT_NAME)
+    const outputPath = path.resolve(__dirname, PROTOBUF_PARAMS.OUTPUT_NAME)
     fs.writeFileSync(outputPath, binaryData)
 
     console.log("Successfully written data to: ", outputPath)

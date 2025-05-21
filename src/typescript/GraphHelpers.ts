@@ -1,4 +1,6 @@
 import { Position as DeckPosition } from 'deck.gl'
+import { PROTOBUF_PARAMS } from './Globals'
+import protobuf from 'protobufjs'
 import Utils from './Utils'
 import {
     TemporalPosition,
@@ -6,14 +8,74 @@ import {
     GraphData,
     GraphNode,
 } from './Declarations'
+import fs from 'fs'
 import {
     Position as GeoPosition,
     FeatureCollection,
     LineString,
     Feature,
 } from 'geojson'
+import protoFile from './preprocessor/pathfinding.proto'
+
+interface PbNode {
+    id: string
+    x: string
+    y: string
+}
+
+interface PbEdge {
+    fromID: string
+    toID: string
+}
+
+interface PbGraph {
+    nodes: PbNode[]
+    edges: PbEdge[]
+}
 
 const GraphHelpers = {
+    buildGraphFromBinary: async (binGraphDataURL: string): Promise<GraphData> => {
+        const graphData = new GraphData()
+        graphData.allGraphNodes = new Map()
+        graphData.adjacencyList = new Map()
+
+        const root = await protobuf.load(protoFile)
+        const graphType = root.lookupType(PROTOBUF_PARAMS.GRAPH_TYPE)
+
+        const response = await fetch(binGraphDataURL)
+        if (!response.ok) {
+            throw new Error()
+        }
+
+        const arrayBuffer = await response.arrayBuffer()
+        const uint8Array = new Uint8Array(arrayBuffer)
+        const deserializedGraph = graphType.decode(uint8Array) as unknown as PbGraph
+
+        if (deserializedGraph.nodes) {
+            deserializedGraph.nodes.forEach(node => {
+                const id = parseInt(node.id);
+                const position: [number, number] = [
+                    parseFloat(node.x),
+                    parseFloat(node.y)
+                ]
+                graphData.allGraphNodes.set(id, new GraphNode(id, position))
+            })
+        }
+
+        if (deserializedGraph.edges) {
+            deserializedGraph.edges.forEach(edge => {
+                const fromID = parseInt(edge.fromID)
+                const toID = parseInt(edge.toID)
+
+                if (!graphData.adjacencyList.has(fromID)) {
+                    graphData.adjacencyList.set(fromID, new Set<number>());
+                }
+                graphData.adjacencyList.get(fromID)?.add(toID);
+            });
+        }
+
+        return graphData
+    },
     // =====================================================
     // ================= BUILD GRAPH =======================
     // =====================================================

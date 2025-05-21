@@ -4,6 +4,8 @@ import singaporeBuildings from '../assets/buildingData.json' // Smaller test dat
 import singaporeRoads from '../assets/roadData.json' // Smaller test data
 // import singaporeRoads from './assets/singapore_roads.json'
 
+import binGraphDataURL from '../assets/graph_data.bin'
+
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import Pathfinders from '../typescript/PathfindingAlgorithms'
 import useTimeElapsedManager from '../hooks/useTimeElapsed'
@@ -88,7 +90,14 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
   }
 
   useEffect(() => {
-    setGraphData(GraphHelpers.buildGraph(singaporeRoads as FeatureCollection))
+    console.log("Building graph from bin....")
+
+    const initializeGraphData = async (): Promise<void> => {
+      const graphData = await GraphHelpers.buildGraphFromBinary(binGraphDataURL)
+      setGraphData(graphData)
+    }
+    initializeGraphData()
+    // setGraphData(GraphHelpers.buildGraph(singaporeRoads as FeatureCollection))
     // setBuildingsWithLevels(_ => {
     //   return (singaporeBuildings as FeatureCollection).features.filter(
     //     feature => {
