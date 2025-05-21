@@ -40,6 +40,14 @@ const Utils = {
                 ? Math.max(start, Math.min(end, value))
                 : Math.max(end, Math.min(start, value))
             : value
+    },
+    constrain(value: number, min: number, max: number): number {
+        if (min > max) {
+            const tmpMax = max
+            max = min
+            min = tmpMax
+        }
+        return Math.min(max, Math.max(min, value))
     }
 }
 

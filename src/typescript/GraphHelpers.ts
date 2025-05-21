@@ -1,3 +1,4 @@
+import protoFile from './preprocessor/pathfinding.proto'
 import { Position as DeckPosition } from 'deck.gl'
 import { PROTOBUF_PARAMS } from './Globals'
 import protobuf from 'protobufjs'
@@ -8,24 +9,22 @@ import {
     GraphData,
     GraphNode,
 } from './Declarations'
-import fs from 'fs'
 import {
     Position as GeoPosition,
     FeatureCollection,
     LineString,
     Feature,
 } from 'geojson'
-import protoFile from './preprocessor/pathfinding.proto'
 
 interface PbNode {
-    id: string
-    x: string
-    y: string
+    id: number
+    x: number
+    y: number
 }
 
 interface PbEdge {
-    fromID: string
-    toID: string
+    fromID: number
+    toID: number
 }
 
 interface PbGraph {
@@ -47,30 +46,26 @@ const GraphHelpers = {
             throw new Error()
         }
 
+        console.log("No errors with fetching")
         const arrayBuffer = await response.arrayBuffer()
         const uint8Array = new Uint8Array(arrayBuffer)
         const deserializedGraph = graphType.decode(uint8Array) as unknown as PbGraph
 
         if (deserializedGraph.nodes) {
             deserializedGraph.nodes.forEach(node => {
-                const id = parseInt(node.id);
-                const position: [number, number] = [
-                    parseFloat(node.x),
-                    parseFloat(node.y)
-                ]
-                graphData.allGraphNodes.set(id, new GraphNode(id, position))
+                graphData.allGraphNodes.set(
+                    node.id,
+                    new GraphNode(node.id, [node.x, node.y])
+                )
             })
         }
 
         if (deserializedGraph.edges) {
             deserializedGraph.edges.forEach(edge => {
-                const fromID = parseInt(edge.fromID)
-                const toID = parseInt(edge.toID)
-
-                if (!graphData.adjacencyList.has(fromID)) {
-                    graphData.adjacencyList.set(fromID, new Set<number>());
+                if (!graphData.adjacencyList.has(edge.fromID)) {
+                    graphData.adjacencyList.set(edge.fromID, new Set<number>());
                 }
-                graphData.adjacencyList.get(fromID)?.add(toID);
+                graphData.adjacencyList.get(edge.fromID)?.add(edge.toID);
             });
         }
 

@@ -6,10 +6,11 @@ import singaporeRoads from '../assets/roadData.json' // Smaller test data
 
 import binGraphDataURL from '../assets/graph_data.bin'
 
-import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react'
 import Pathfinders from '../typescript/PathfindingAlgorithms'
 import useTimeElapsedManager from '../hooks/useTimeElapsed'
 import GraphHelpers from '../typescript/GraphHelpers'
+import { Map as Basemap } from '@vis.gl/react-maplibre'
 import { FeatureCollection } from 'geojson'
 import {
   PATHFINDER_TYPE,
@@ -22,10 +23,15 @@ import {
 } from '../typescript/Declarations'
 import DeckGL, {
   ScatterplotLayer,
+  MapController,
   GeoJsonLayer,
   PickingInfo,
   TripsLayer,
+  MapViewState,
+  WebMercatorViewport,
 } from 'deck.gl'
+import Utils from '../typescript/Utils'
+import { SG_BOUNDS } from '../typescript/Globals'
 
 export interface MapRendererRef {
   runPathfinding: () => void
@@ -89,9 +95,26 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
     timeElapsedManager.resetTimeElapsed()
   }
 
-  useEffect(() => {
-    console.log("Building graph from bin....")
+  const handleViewStateChange = (viewState: MapViewState): void => {
+    console.log("lat: ", viewState.latitude)
+    console.log("lng: ", viewState.longitude)
+    viewState.minZoom = 12
+    viewState.maxZoom = 16
 
+    viewState.latitude = Utils.constrain(
+      viewState.latitude,
+      SG_BOUNDS.MIN.LAT,
+      SG_BOUNDS.MAX.LAT
+    )
+
+    viewState.longitude = Utils.constrain(
+      viewState.longitude,
+      SG_BOUNDS.MIN.LNG,
+      SG_BOUNDS.MAX.LNG
+    )
+  }
+
+  useEffect(() => {
     const initializeGraphData = async (): Promise<void> => {
       const graphData = await GraphHelpers.buildGraphFromBinary(binGraphDataURL)
       setGraphData(graphData)
@@ -109,10 +132,6 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
     //   )
     // })
   }, [])
-
-  // useEffect(() => {
-  //   // setTimeElapsed(timeElak0)
-  // }, [timeElapsedManager])
 
   const pathfindingLayer = new TripsLayer<TemporalLine>({
     id: 'Pathfinding Layer',
@@ -141,16 +160,16 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
     getColor: [0, 200, 255, 180], // Include alpha value
   })
 
-  const roadLayer = new GeoJsonLayer({
-    id: 'Road Layer',
-    data: singaporeRoads as FeatureCollection,
-    filled: true,
-    stroked: false,
-    opacity: 0.9,
-    lineWidthMinPixels: 3,
-    getLineWidth: 4,
-    getLineColor: [100, 60, 30, 70],
-  })
+  // const roadLayer = new GeoJsonLayer({
+  //   id: 'Road Layer',
+  //   data: singaporeRoads as FeatureCollection,
+  //   filled: true,
+  //   stroked: false,
+  //   opacity: 0.9,
+  //   lineWidthMinPixels: 3,
+  //   getLineWidth: 4,
+  //   getLineColor: [100, 60, 30, 70],
+  // })
 
   // const buildingLayer = new GeoJsonLayer<Feature>({
   //   id: 'Building Layer', data: (singaporeBuildings as FeatureCollection),
@@ -293,9 +312,15 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
         latitude: 1.3506264285088163,
         zoom: 15,
       }}
-      controller
+      controller={{
+        type: MapController,
+        scrollZoom: {
+          smooth: true,
+          speed: 0.035
+        }
+      }}
       layers={[
-        roadLayer,
+        // roadLayer,
         // buildingLayer,
         // buildingPolyLayer,
         pathfindingLayer,
@@ -304,6 +329,7 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
         finalPathGlowLayer,
         startEndPointLayer,
       ]}
+      onViewStateChange={vs => handleViewStateChange(vs.viewState as MapViewState)}
       onClick={(info: PickingInfo) => {
         if (!info.coordinate) {
           return
@@ -312,7 +338,9 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
         const y = info.coordinate[1] as number
         mapClickHandler([x, y], isPickingStart)
       }}
-    ></DeckGL>
+    >
+      <Basemap mapStyle={'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json'} />
+    </DeckGL>
   )
 })
 
