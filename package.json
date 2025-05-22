@@ -8,7 +8,7 @@
         "build": "tsc -b && vite build",
         "lint": "eslint .",
         "preview": "vite preview",
-        "preprocess": "npx vite-node ./src/typescript/preprocessor/Preprocessor.ts",
+        "preprocess": "npx vite-node ./scripts/preprocessor/Preprocessor.ts",
         "query": "npx vite-node ./scripts/overpass_query/Query.ts"
     },
     "dependencies": {

@@ -1,6 +1,6 @@
-import protoFile from './preprocessor/pathfinding.proto'
 import { Position as DeckPosition } from 'deck.gl'
 import { PROTOBUF_PARAMS } from './Globals'
+import protoFile from './pathfinding.proto'
 import protobuf from 'protobufjs'
 import Utils from './Utils'
 import {

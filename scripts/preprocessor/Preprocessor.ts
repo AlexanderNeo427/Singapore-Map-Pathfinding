@@ -1,6 +1,7 @@
-import { PROTOBUF_PARAMS } from '../Globals'
-import { GraphData } from '../Declarations'
-import GraphHelpers from '../GraphHelpers'
+import protoFile from '../../src/typescript/pathfinding.proto'
+import { PROTOBUF_PARAMS } from '../../src/typescript/Globals'
+import { GraphData } from '../../src/typescript/Declarations'
+import GraphHelpers from '../../src/typescript/GraphHelpers'
 import singaporeRoadData from './sg_footways_service.json'
 import { FeatureCollection } from 'geojson'
 import protobuf from 'protobufjs'
@@ -37,9 +38,8 @@ const extractPackedGraph = async (graphData: GraphData): Promise<GraphData> => {
 
 const preprocess = async (geoJson: FeatureCollection): Promise<void> => {
     const graphData = await extractPackedGraph(GraphHelpers.buildGraph(geoJson))
-    const protoPath = path.resolve(__dirname, PROTOBUF_PARAMS.NAME)
 
-    const root = await protobuf.load(protoPath)
+    const root = await protobuf.load(protoFile)
     const nodeType = root.lookupType(PROTOBUF_PARAMS.NODE_TYPE)
     const edgeType = root.lookupType(PROTOBUF_PARAMS.EDGE_TYPE)
     const graphType = root.lookupType(PROTOBUF_PARAMS.GRAPH_TYPE)

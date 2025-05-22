@@ -28,4 +28,4 @@ dist-ssr
 
 # Don't want to commit the GeoJSON files
 scripts/overpass_query/**/*.json
-src/typescript/preprocessor/**/*.json
+scripts/preprocessor/**/*.json
