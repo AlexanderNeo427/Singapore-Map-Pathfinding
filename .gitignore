@@ -27,5 +27,5 @@ dist-ssr
 *.env.*
 
 # Don't want to commit the GeoJSON files
-scripts/overpass_query/**/*.json
-scripts/preprocessor/**/*.json
+scripts/overpass_query/**/*.geojson
+scripts/preprocessor/**/*.geojson

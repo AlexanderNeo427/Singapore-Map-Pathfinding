@@ -1,8 +1,6 @@
-import protoFile from '../../src/typescript/pathfinding.proto'
 import { PROTOBUF_PARAMS } from '../../src/typescript/Globals'
 import { GraphData } from '../../src/typescript/Declarations'
 import GraphHelpers from '../../src/typescript/GraphHelpers'
-import singaporeRoadData from './sg_footways_service.json'
 import { FeatureCollection } from 'geojson'
 import protobuf from 'protobufjs'
 import path from 'path'
@@ -39,7 +37,8 @@ const extractPackedGraph = async (graphData: GraphData): Promise<GraphData> => {
 const preprocess = async (geoJson: FeatureCollection): Promise<void> => {
     const graphData = await extractPackedGraph(GraphHelpers.buildGraph(geoJson))
 
-    const root = await protobuf.load(protoFile)
+    const protoFilePath = path.resolve(__dirname, '../../src/typescript/pathfinding.proto')
+    const root = await protobuf.load(protoFilePath)
     const nodeType = root.lookupType(PROTOBUF_PARAMS.NODE_TYPE)
     const edgeType = root.lookupType(PROTOBUF_PARAMS.EDGE_TYPE)
     const graphType = root.lookupType(PROTOBUF_PARAMS.GRAPH_TYPE)
@@ -100,7 +99,10 @@ const preprocess = async (geoJson: FeatureCollection): Promise<void> => {
 // }
 
 try {
-    await preprocess(singaporeRoadData as FeatureCollection)
+    const dataPath = path.resolve(__dirname, "sg_roads_small.geojson")
+    const rawSgData = fs.readFileSync(dataPath, 'utf-8')
+    const singaporeGeoJSON = JSON.parse(rawSgData)
+    await preprocess(singaporeGeoJSON as FeatureCollection)
     // await deserialize()
 } catch (err) {
     console.error((err as Error).message)

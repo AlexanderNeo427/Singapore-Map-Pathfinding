@@ -60,7 +60,7 @@ async function fetchSingaporeOverpassData(query: string, fileName: string) {
 try {
     fetchSingaporeOverpassData(
         overpassQuery,
-        path.resolve(__dirname, "Output.json")
+        path.resolve(__dirname, "Output.geojson")
     )
 } catch (err) {
     console.error("Error while fetching from Overpass API: ", (err as Error).message)

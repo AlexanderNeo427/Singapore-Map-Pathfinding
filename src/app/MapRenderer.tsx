@@ -1,12 +1,12 @@
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import { PATHFINDING_GLOBALS, SG_BOUNDS } from '../typescript/Globals'
 import Pathfinders from '../typescript/PathfindingAlgorithms'
+import { Bounce, toast, ToastOptions } from 'react-toastify'
 import useTimeElapsedManager from '../hooks/useTimeElapsed'
 import { Map as Basemap } from '@vis.gl/react-maplibre'
 import binGraphDataURL from '../assets/graph_data.bin'
 import GraphHelpers from '../typescript/GraphHelpers'
 import Utils from '../typescript/Utils'
-import { Bounce, toast, ToastOptions } from 'react-toastify'
 import {
   PathfindingResults,
   PATHFINDER_TYPE,
@@ -61,8 +61,6 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
   const [isPickingStart, setIsPickingStart] = useState<boolean>(true)
 
   const timeElapsedManager = useTimeElapsedManager()
-
-  // const [buildingsWithLevels, setBuildingsWithLevels] = useState<Feature[]>([])
 
   useImperativeHandle(ref, () => ({
     runPathfinding: () => runPathfindingAlgo()
@@ -141,7 +139,6 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
   useEffect(() => {
     const initializeGraphData = async (): Promise<void> => {
       const graphData = await GraphHelpers.buildGraphFromBinary(binGraphDataURL)
-      // const graphData = await GraphHelpers.buildGraph(singaporeRoads as FeatureCollection)
       setGraphData(graphData)
     }
     initializeGraphData()
