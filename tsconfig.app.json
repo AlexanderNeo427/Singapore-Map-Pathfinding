@@ -26,6 +26,7 @@
     },
     "include": [
         "src",
-        "src/typescript/preprocessor"
+        "src/typescript/preprocessor",
+        "scripts/overpass_query"
     ]
 }

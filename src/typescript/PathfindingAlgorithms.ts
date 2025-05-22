@@ -2,8 +2,8 @@ import { MinPriorityQueue } from '@datastructures-js/priority-queue'
 import Utils from './Utils'
 import {
     PathfindingParameters,
-    Pathfinder,
     PathfindingResults,
+    Pathfinder,
     GraphNode,
 } from './Declarations'
 

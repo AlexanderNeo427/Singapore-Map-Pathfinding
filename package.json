@@ -8,8 +8,8 @@
         "build": "tsc -b && vite build",
         "lint": "eslint .",
         "preview": "vite preview",
-        "preprocess": "npx vite-node ./src/typescript/preprocessor/preprocessor.ts",
-        "query": "npx vite-node ./src/typescript/overpass_query/Query.ts"
+        "preprocess": "npx vite-node ./src/typescript/preprocessor/Preprocessor.ts",
+        "query": "npx vite-node ./scripts/overpass_query/Query.ts"
     },
     "dependencies": {
         "@datastructures-js/priority-queue": "^6.3.2",
@@ -38,6 +38,7 @@
         "eslint-plugin-react-hooks": "^5.0.0",
         "eslint-plugin-react-refresh": "^0.4.18",
         "globals": "^15.14.0",
+        "osmtogeojson": "^3.0.0-beta.5",
         "prettier": "^3.5.2",
         "protobufjs": "^7.4.0",
         "typescript": "~5.7.2",

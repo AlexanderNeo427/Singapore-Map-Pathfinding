@@ -1,10 +1,10 @@
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
+import { PATHFINDING_GLOBALS, SG_BOUNDS } from '../typescript/Globals'
 import Pathfinders from '../typescript/PathfindingAlgorithms'
 import useTimeElapsedManager from '../hooks/useTimeElapsed'
 import { Map as Basemap } from '@vis.gl/react-maplibre'
 import binGraphDataURL from '../assets/graph_data.bin'
 import GraphHelpers from '../typescript/GraphHelpers'
-import { PATHFINDING_GLOBALS, SG_BOUNDS } from '../typescript/Globals'
 import Utils from '../typescript/Utils'
 import { Bounce, toast, ToastOptions } from 'react-toastify'
 import {
