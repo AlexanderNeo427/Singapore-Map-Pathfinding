@@ -7,13 +7,13 @@ A projet to visualizer various shortest-path algorithms on a real-map - GeoJSON 
 1. **Clone the project repository**
 
     ```bash
-    git clone https://github.com/AlexanderNeo427/Real-map-Pathfinding
+    git clone https://github.com/AlexanderNeo427/Singapore-map-Pathfinding
     ```
 
 2. **Navigate to the root of the project folder**
 
     ```bash
-    cd Real-map-Pathfinding
+    cd Singapore-map-Pathfinding
     ```
 
 3. **Install dependencies:**
