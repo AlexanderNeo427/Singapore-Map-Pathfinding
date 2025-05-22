@@ -25,3 +25,6 @@ dist-ssr
 
 *.env
 *.env.*
+
+# Don't want to commit the GeoJSON files
+src/assets/**/*.json

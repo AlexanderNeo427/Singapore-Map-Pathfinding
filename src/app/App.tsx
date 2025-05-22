@@ -1,6 +1,7 @@
 import { PATHFINDER_TYPE } from '../typescript/Declarations'
 import MapRenderer, { MapRendererRef } from './MapRenderer'
 import React, { useRef, useState } from 'react'
+import { ToastContainer } from 'react-toastify'
 import OverlayGUI from './OverlayGUI'
 
 const App: React.FC = () => {
@@ -10,13 +11,15 @@ const App: React.FC = () => {
   return (
     <div className="h-full w-full">
       <div className="flex flex-col items-center w-full h-full">
-        <MapRenderer ref={mapRendererRef} pathfinderType={pathfinderType} />
+        <MapRenderer
+          ref={mapRendererRef}
+          pathfinderType={pathfinderType}
+        />
         <OverlayGUI
-          runClickHandler={(): void => {
-            mapRendererRef.current?.runPathfinding()
-          }}
+          runClickHandler={() => mapRendererRef.current?.runPathfinding()}
           algoSetter={setPathfinderType}
         />
+        <ToastContainer />
       </div>
     </div>
   )

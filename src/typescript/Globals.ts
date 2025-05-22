@@ -16,3 +16,8 @@ export const SG_BOUNDS = {
         LNG: 103.97912854100366
     }
 }
+
+export const PATHFINDING_GLOBALS = {
+    MAX_RADIUS_METERS: 1500,
+    EXCEED_RADIUS_MSG: "Please pick a closer endpoint",
+}

@@ -1,4 +1,4 @@
-import singaporeRoadData from '../../assets/sg_roads_small_simplified.json'
+import singaporeRoadData from '../../assets/sg_footways_service.json'
 import { PROTOBUF_PARAMS } from '../Globals'
 import { FeatureCollection } from 'geojson'
 import { GraphData } from '../Declarations'
@@ -86,7 +86,7 @@ const preprocess = async (geoJson: FeatureCollection): Promise<void> => {
     console.log("Successfully written data to: ", outputPath)
 }
 
-const deserialize = async (): Promise<void> => {
+const deserialize = async (): Promise<void> => { // For debuggin
     const protoPath = path.resolve(__dirname, PROTOBUF_PARAMS.NAME)
     const root = await protobuf.load(protoPath)
     const graphType = root.lookupType(PROTOBUF_PARAMS.GRAPH_TYPE)

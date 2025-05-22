@@ -27,6 +27,9 @@ const Utils = {
         const dy: number = a.position[1] - b.position[1]
         return Math.sqrt(dx * dx + dy * dy)
     },
+    getGeographicNodeDistance(a: GraphNode, b: GraphNode): number {
+        return this.getNodeDistance(a, b) * 111000
+    },
     getDeckDistance(a: DeckPosition, b: DeckPosition): number {
         const dx: number = a[0] - b[0]
         const dy: number = a[1] - b[1]

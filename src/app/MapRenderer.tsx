@@ -1,24 +1,12 @@
-// import singaporeBuildings from '../assets/buildingData.json' // Smaller test data
-// import singaporeBuildings from './assets/sg_building_with_heights.json'
-// import singaporeRoads from '../assets/roadData.json' // Smaller test data
-import singaporeRoads from '../assets/singapore_roads.json'
-
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import Pathfinders from '../typescript/PathfindingAlgorithms'
 import useTimeElapsedManager from '../hooks/useTimeElapsed'
 import { Map as Basemap } from '@vis.gl/react-maplibre'
 import binGraphDataURL from '../assets/graph_data.bin'
 import GraphHelpers from '../typescript/GraphHelpers'
-import { SG_BOUNDS } from '../typescript/Globals'
-import { FeatureCollection } from 'geojson'
-import DeckGL, {
-  ScatterplotLayer,
-  MapController,
-  MapViewState,
-  PickingInfo,
-  TripsLayer,
-} from 'deck.gl'
+import { PATHFINDING_GLOBALS, SG_BOUNDS } from '../typescript/Globals'
 import Utils from '../typescript/Utils'
+import { Bounce, toast, ToastOptions } from 'react-toastify'
 import {
   PathfindingResults,
   PATHFINDER_TYPE,
@@ -28,6 +16,13 @@ import {
   GraphNode,
   GraphData,
 } from '../typescript/Declarations'
+import DeckGL, {
+  ScatterplotLayer,
+  MapController,
+  MapViewState,
+  PickingInfo,
+  TripsLayer,
+} from 'deck.gl'
 
 export interface MapRendererRef {
   runPathfinding: () => Promise<void>
@@ -43,6 +38,18 @@ export const PathfindingAlgoMap = new Map<PATHFINDER_TYPE, Pathfinder>([
   [PATHFINDER_TYPE.DIJKSTRA, Pathfinders.dijkstra],
   [PATHFINDER_TYPE.AStar, Pathfinders.AStar],
 ])
+
+const sharedToastOptions = {
+  position: "bottom-right",
+  autoClose: 3000,
+  hideProgressBar: false,
+  closeOnClick: false,
+  pauseOnHover: true,
+  draggable: true,
+  progress: undefined,
+  theme: "light",
+  transition: Bounce,
+} as ToastOptions
 
 const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) => {
   const [graphData, setGraphData] = useState<GraphData>(new GraphData())
@@ -62,12 +69,33 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
   }))
 
   const runPathfindingAlgo = async (): Promise<void> => {
+    setTrips([])
+    setFinalPath([])
+    timeElapsedManager.resetTimeElapsed()
+
     const pathfinder = PathfindingAlgoMap.get(props.pathfinderType)
     if (!pathfinder || pathfinder === undefined || pathfinder === null) {
       return
     }
 
+    if (!startNode && !endNode) {
+      toast.warning('Click on the map to specify "start" and "end" positions', sharedToastOptions)
+      return
+    }
+
+    if (startNode && !endNode) {
+      toast.warning('Click on the map to specify an "end" position', sharedToastOptions)
+      return
+    }
+
     if (!startNode || !endNode) {
+      toast.warning('Click on the map to specify "start" and "end" positions', sharedToastOptions)
+      return
+    }
+
+    const distanceInMeters = Utils.getGeographicNodeDistance(startNode, endNode)
+    if (distanceInMeters > PATHFINDING_GLOBALS.MAX_RADIUS_METERS) {
+      toast.warning(PATHFINDING_GLOBALS.EXCEED_RADIUS_MSG, sharedToastOptions)
       return
     }
 
@@ -112,21 +140,11 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
 
   useEffect(() => {
     const initializeGraphData = async (): Promise<void> => {
-      // const graphData = await GraphHelpers.buildGraphFromBinary(binGraphDataURL)
-      const graphData = await GraphHelpers.buildGraph(singaporeRoads as FeatureCollection)
+      const graphData = await GraphHelpers.buildGraphFromBinary(binGraphDataURL)
+      // const graphData = await GraphHelpers.buildGraph(singaporeRoads as FeatureCollection)
       setGraphData(graphData)
     }
     initializeGraphData()
-    // setBuildingsWithLevels(_ => {
-    //   return (singaporeBuildings as FeatureCollection).features.filter(
-    //     feature => {
-    //       return (
-    //         feature.properties &&
-    //         feature.properties['building:levels']
-    //       )
-    //     }
-    //   )
-    // })
   }, [])
 
   const pathfindingLayer = new TripsLayer<TemporalLine>({
@@ -156,63 +174,6 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
     getColor: [0, 200, 255, 180], // Include alpha value
   })
 
-  // const roadLayer = new GeoJsonLayer({
-  //   id: 'Road Layer',
-  //   data: singaporeRoads as FeatureCollection,
-  //   filled: true,
-  //   stroked: false,
-  //   opacity: 0.9,
-  //   lineWidthMinPixels: 3,
-  //   getLineWidth: 4,
-  //   getLineColor: [100, 60, 30, 70],
-  // })
-
-  // const buildingLayer = new GeoJsonLayer<Feature>({
-  //   id: 'Building Layer', data: (singaporeBuildings as FeatureCollection),
-  //   getElevation: d => {
-  //     return 100
-  //   },
-  //   extruded: true,
-  //   filled: true, stroked: false, opacity: 0.4,
-  //   getLineWidth: 5,
-  //   getLineColor: [74, 80, 87],
-  // })
-
-  // const buildingPolyLayer = new PolygonLayer<Feature>({
-  //   id: 'Building Polygon Layer',
-  //   data: buildingsWithLevels,
-  //   getFillColor: d => {
-  //     if (!d.properties || !d.properties['building:levels']) {
-  //       return [0, 0, 0]
-  //     }
-  //     const noOfLevels = d.properties['building:levels'] as number
-  //     const SHORT_COLOR = [20, 20, 30]
-  //     const TALL_COLOR = [200, 200, 230]
-
-  //     const t = noOfLevels / 26
-  //     const r = Utils.lerp(SHORT_COLOR[0], TALL_COLOR[0], t)
-  //     const g = Utils.lerp(SHORT_COLOR[1], TALL_COLOR[1], t)
-  //     const b = Utils.lerp(SHORT_COLOR[2], TALL_COLOR[2], t)
-  //     return [r, g, b]
-  //   },
-  //   getPolygon: d => {
-  //     if (d.geometry.type === 'Polygon') {
-  //       return d.geometry.coordinates
-  //     }
-  //     return []
-  //   },
-  //   getElevation: d => {
-  //     if (!d.properties || !d.properties['building:levels']) {
-  //       return 0
-  //     }
-  //     const LEVEL_HEIGHT = 5
-  //     const noOfLevels = d.properties['building:levels'] as number
-  //     return noOfLevels * LEVEL_HEIGHT
-  //   },
-  //   opacity: 0.8,
-  //   extruded: true,
-  // })
-
   const START_END_POINT_SIZE = 7
   const startEndPointLayer = new ScatterplotLayer<StartEndPoint>({
     id: 'Start & End Point Layer',
@@ -237,12 +198,23 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
     lineWidthMaxPixels: 3,
   })
 
+  const pathfindingMaxRadiusLayer = new ScatterplotLayer<GraphNode>({
+    id: 'Pathfinding Max Radius Layer',
+    data: [startNode],
+    getFillColor: [50, 60, 70, 80],
+    getLineColor: [200, 255, 240, 90],
+    getLineWidth: 7,
+    stroked: true,
+    getRadius: PATHFINDING_GLOBALS.MAX_RADIUS_METERS,
+    getPosition: d => d.position
+  })
+
   const finalPathLayer = new TripsLayer<TemporalLine>({
     id: 'Final Path Layer',
     data: finalPath,
     getPath: d => [d.from.pos, d.to.pos],
     getTimestamps: d => [d.from.timeStamp, d.to.timeStamp],
-    getWidth: 20,
+    getWidth: 16,
     pickable: true,
     capRounded: true,
     getColor: [170, 0, 250],
@@ -255,7 +227,7 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
     data: finalPath,
     getPath: d => [d.from.pos, d.to.pos],
     getTimestamps: d => [d.from.timeStamp, d.to.timeStamp],
-    getWidth: 30,
+    getWidth: 25,
     pickable: true,
     capRounded: true,
     getColor: [0, 200, 255, 250],
@@ -283,13 +255,21 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
     if (!nodeClosestToClick || nodeClosestToClick === null) {
       return
     }
-    if (minDist > 0.0003) {
+    if (minDist > 0.00038) {
       return
     } // Tolerance
 
     if (isPickingStart) {
       setStartNode(nodeClosestToClick)
     } else {
+      if (!startNode) {
+        return
+      }
+      const distanceInMeters = Utils.getGeographicNodeDistance(startNode, nodeClosestToClick)
+      if (distanceInMeters > PATHFINDING_GLOBALS.MAX_RADIUS_METERS) {
+        toast.error(PATHFINDING_GLOBALS.EXCEED_RADIUS_MSG, sharedToastOptions)
+        return
+      }
       setEndNode(nodeClosestToClick)
     }
     setIsPickingStart(val => !val)
@@ -315,9 +295,7 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
         }
       }}
       layers={[
-        // roadLayer,
-        // buildingLayer,
-        // buildingPolyLayer,
+        pathfindingMaxRadiusLayer,
         pathfindingLayer,
         pathfindingGlowLayer,
         finalPathLayer,
@@ -334,7 +312,9 @@ const MapRenderer = forwardRef<MapRendererRef, MapRendererProps>((props, ref) =>
         mapClickHandler([x, y], isPickingStart)
       }}
     >
-      <Basemap mapStyle={'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json'} />
+      <Basemap mapStyle={`
+        https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json
+      `} />
     </DeckGL>
   )
 })
