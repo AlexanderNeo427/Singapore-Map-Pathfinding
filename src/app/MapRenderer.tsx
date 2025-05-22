@@ -1,6 +1,5 @@
 // import singaporeBuildings from '../assets/buildingData.json' // Smaller test data
 // import singaporeBuildings from './assets/sg_building_with_heights.json'
-
 // import singaporeRoads from '../assets/roadData.json' // Smaller test data
 import singaporeRoads from '../assets/singapore_roads.json'
 
@@ -11,6 +10,7 @@ import { Map as Basemap } from '@vis.gl/react-maplibre'
 import binGraphDataURL from '../assets/graph_data.bin'
 import GraphHelpers from '../typescript/GraphHelpers'
 import { SG_BOUNDS } from '../typescript/Globals'
+import { FeatureCollection } from 'geojson'
 import DeckGL, {
   ScatterplotLayer,
   MapController,
@@ -28,7 +28,6 @@ import {
   GraphNode,
   GraphData,
 } from '../typescript/Declarations'
-import { FeatureCollection } from 'geojson'
 
 export interface MapRendererRef {
   runPathfinding: () => Promise<void>

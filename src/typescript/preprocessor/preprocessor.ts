@@ -1,4 +1,4 @@
-import singaporeRoadData from '../../assets/singapore_roads.json'
+import singaporeRoadData from '../../assets/sg_roads_small_simplified.json'
 import { PROTOBUF_PARAMS } from '../Globals'
 import { FeatureCollection } from 'geojson'
 import { GraphData } from '../Declarations'
@@ -35,10 +35,6 @@ const extractPackedGraph = async (graphData: GraphData): Promise<GraphData> => {
     return packedGraphData
 }
 
-const simplifyGraph = async (graphData: GraphData): Promise<GraphData> => {
-    return new GraphData()
-}
-
 const preprocess = async (geoJson: FeatureCollection): Promise<void> => {
     const graphData = await extractPackedGraph(GraphHelpers.buildGraph(geoJson))
     const protoPath = path.resolve(__dirname, PROTOBUF_PARAMS.NAME)
@@ -48,6 +44,7 @@ const preprocess = async (geoJson: FeatureCollection): Promise<void> => {
     const edgeType = root.lookupType(PROTOBUF_PARAMS.EDGE_TYPE)
     const graphType = root.lookupType(PROTOBUF_PARAMS.GRAPH_TYPE)
 
+    console.log("....preparing to create pbNodes...")
     const pbNodes = Array.from(graphData.allGraphNodes).map(([id, node]) => {
         return nodeType.create({
             id: id,
@@ -55,7 +52,9 @@ const preprocess = async (geoJson: FeatureCollection): Promise<void> => {
             y: node.position[1],
         })
     })
+    console.log("pbNodes created successfully!")
 
+    console.log("....preparing to create pbEdges...")
     const pbEdges = (
         (): protobuf.Message[] => {
             const arr: protobuf.Message[] = []
@@ -71,11 +70,14 @@ const preprocess = async (geoJson: FeatureCollection): Promise<void> => {
             return arr
         }
     )()
+    console.log("pbEdges created successfully!")
 
+    console.log(".....preparing to create pbGraph...")
     const pbGraph = graphType.create({
         nodes: pbNodes,
         edges: pbEdges
     })
+    console.log("pbGraph created successfully!")
 
     const binaryData = graphType.encode(pbGraph).finish()
     const outputPath = path.resolve(__dirname, PROTOBUF_PARAMS.OUTPUT_NAME)

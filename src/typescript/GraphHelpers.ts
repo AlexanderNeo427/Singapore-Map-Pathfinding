@@ -81,11 +81,17 @@ const GraphHelpers = {
         const adjacencyList = new Map<number, Set<number>>()
 
         allFeatures.features.forEach((feature: Feature) => {
-            if (feature.geometry.type !== 'LineString') {
+            if (!feature.geometry ||
+                !feature.geometry.type ||
+                feature.geometry.type !== 'LineString') {
+                return
+            }
+            const lineString = feature.geometry as LineString
+            if (!lineString.coordinates) {
                 return
             }
 
-            const allWayCoords = (feature.geometry as LineString).coordinates
+            const allWayCoords = lineString.coordinates
             for (let i = 0; i < allWayCoords.length - 1; i++) {
                 // Lazily instantiate new graph node for 'currNodeID'
                 // (assuming it doesn't exist yet)
