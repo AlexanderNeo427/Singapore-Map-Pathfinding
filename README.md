@@ -1,4 +1,4 @@
-# Real Map Pathfinding
+# Singapore Map Pathfinding
 
 A projet to visualizer various shortest-path algorithms on a real-map - GeoJSON data pulled from [Overpass Turbo](https://overpass-turbo.eu/)
 
