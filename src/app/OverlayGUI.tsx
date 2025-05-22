@@ -1,6 +1,6 @@
 import Select, { StylesConfig, SingleValue } from 'react-select'
 import { PATHFINDER_TYPE } from '../typescript/Declarations'
-import React, { Dispatch, SetStateAction, useState } from 'react'
+import React, { Dispatch, SetStateAction } from 'react'
 
 type OptionType = {
   value: PATHFINDER_TYPE

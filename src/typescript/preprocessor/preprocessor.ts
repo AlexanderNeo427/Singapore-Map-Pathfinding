@@ -86,17 +86,18 @@ const preprocess = async (geoJson: FeatureCollection): Promise<void> => {
     console.log("Successfully written data to: ", outputPath)
 }
 
-const deserialize = async (): Promise<void> => { // For debuggin
-    const protoPath = path.resolve(__dirname, PROTOBUF_PARAMS.NAME)
-    const root = await protobuf.load(protoPath)
-    const graphType = root.lookupType(PROTOBUF_PARAMS.GRAPH_TYPE)
+// For debugging
+// const deserialize = async (): Promise<void> => { 
+//     const protoPath = path.resolve(__dirname, PROTOBUF_PARAMS.NAME)
+//     const root = await protobuf.load(protoPath)
+//     const graphType = root.lookupType(PROTOBUF_PARAMS.GRAPH_TYPE)
 
-    const inputPath = path.resolve(__dirname, PROTOBUF_PARAMS.OUTPUT_NAME)
-    const binaryData = fs.readFileSync(inputPath)
+//     const inputPath = path.resolve(__dirname, PROTOBUF_PARAMS.OUTPUT_NAME)
+//     const binaryData = fs.readFileSync(inputPath)
 
-    const deserializedGraph = graphType.decode(binaryData)
-    console.log("Deserialized Graph: ", deserializedGraph)
-}
+//     const deserializedGraph = graphType.decode(binaryData)
+//     console.log("Deserialized Graph: ", deserializedGraph)
+// }
 
 try {
     await preprocess(singaporeRoadData as FeatureCollection)
